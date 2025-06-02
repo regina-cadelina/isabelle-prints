@@ -1,4 +1,13 @@
 <?php
+session_start();
+
+if (isset($_SESSION['user'])) {
+    echo "Welcome, " . $_SESSION['user']['name'];
+    // Show logout button, etc.
+} else {
+    echo "You are not logged in.";
+    // Show login button
+}
 $pageTitle = "Home";
 include 'includes/header.php';
 require_once 'config/database.php';

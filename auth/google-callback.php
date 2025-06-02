@@ -113,9 +113,12 @@ try {
     }
 
     // Set session variables
-    $_SESSION['user_id'] = $userId;
-    $_SESSION['user_email'] = $userInfo['email'];
-    $_SESSION['user_name'] = $userName ?: 'User';
+    $_SESSION['user'] = [
+        'name' => $user['name'],
+        'email' => $user['email'],
+        'picture' => $user['picture']
+    ];
+    
 
     // Redirect to intended page or products
     $redirect = $_SESSION['redirect_after_login'] ?? '/isabelle-prints/pages/products.php';
