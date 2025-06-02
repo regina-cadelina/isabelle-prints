@@ -81,6 +81,28 @@ if (empty($products)) {
     ];
     $products = $sampleProducts;
 }
+
+// Add this to includes/functions.php or at the top of your processing script
+function handleCustomizationUpload($fileInputName = 'custom_file') {
+    $uploadDir = __DIR__ . '/../uploads/customization-uploads/';
+    if (!is_dir($uploadDir)) {
+        mkdir($uploadDir, 0755, true);
+    }
+
+    if (isset($_FILES[$fileInputName]) && $_FILES[$fileInputName]['error'] === UPLOAD_ERR_OK) {
+        $fileExtension = strtolower(pathinfo($_FILES[$fileInputName]['name'], PATHINFO_EXTENSION));
+        $allowedExtensions = ['jpg', 'jpeg', 'png', 'pdf'];
+        if (!in_array($fileExtension, $allowedExtensions)) {
+            return false; // Invalid file type
+        }
+        $fileName = 'custom_' . time() . '_' . uniqid() . '.' . $fileExtension;
+        $uploadPath = $uploadDir . $fileName;
+        if (move_uploaded_file($_FILES[$fileInputName]['tmp_name'], $uploadPath)) {
+            return $fileName;
+        }
+    }
+    return false;
+}
 ?>
 
 <main class="products-page">
@@ -368,4 +390,23 @@ window.onclick = function(event) {
 }
 </script>
 
-<?php include '../includes/footer.php'; ?>
+<?php include '../includes/footer.php'; ?><?php
+// Example: After processing your order and getting $order_id and $product_id
+
+$fileUploadName = handleCustomizationUpload('custom_file'); // 'custom_file' is the input name
+
+$stmt = $pdo->prepare("INSERT INTO order_item (order_id, product_id, quantity, price, file_upload) VALUES (?, ?, ?, ?, ?)");
+$stmt->execute([
+    $order_id,
+    $product_id,
+    $quantity,
+    $price,
+    $fileUploadName // This will be the filename or false if upload failed
+]);
+?>
+
+<form method="POST" enctype="multipart/form-data">
+    <!-- other fields -->
+    <input type="file" name="custom_file" accept=".jpg,.jpeg,.png,.pdf">
+    <button type="submit">Upload</button>
+</form>
