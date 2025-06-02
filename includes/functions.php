@@ -62,7 +62,6 @@ function calculateCartTotal($pdo) {
     
     foreach ($items as $item) {
         $price = $item['product']['base_price'];
-        // Add option price modifiers here if needed
         $subtotal += $price * $item['quantity'];
     }
     
@@ -78,18 +77,52 @@ function calculateCartTotal($pdo) {
     ];
 }
 
+// Authentication functions
 function isLoggedIn() {
     return isset($_SESSION['user_id']);
 }
 
-function getCurrentUser($pdo) {
+function getCurrentUser() {
     if (!isLoggedIn()) {
         return null;
     }
     
-    $stmt = $pdo->prepare("SELECT * FROM users WHERE id = ?");
-    $stmt->execute([$_SESSION['user_id']]);
-    return $stmt->fetch();
+    return [
+        'user_id' => $_SESSION['user_id'],
+        'email' => $_SESSION['user_email'],
+        'name' => $_SESSION['user_name'],
+        'first_name' => $_SESSION['first_name'],
+        'last_name' => $_SESSION['last_name'],
+        'user_type' => $_SESSION['user_type'] ?? 'customer'
+    ];
+}
+
+function isAdmin() {
+    return isLoggedIn() && ($_SESSION['user_type'] ?? '') === 'admin';
+}
+
+function requireAdmin() {
+    if (!isAdmin()) {
+        header('Location: /isabelle-prints/pages/login.php');
+        exit;
+    }
+}
+
+function requireLogin() {
+    if (!isLoggedIn()) {
+        $_SESSION['redirect_after_login'] = $_SERVER['REQUEST_URI'];
+        header('Location: /isabelle-prints/pages/login.php');
+        exit;
+    }
+}
+
+function redirect($url) {
+    header("Location: " . $url);
+    exit;
+}
+
+function sanitizeInput($data) {
+    return htmlspecialchars(strip_tags(trim($data)));
 }
 
 function clearCart($pdo, $user_id) {

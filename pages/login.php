@@ -9,7 +9,12 @@ require_once '../config/google-config.php';
 
 // Check if user is already logged in
 if (isset($_SESSION['user_id'])) {
-    header('Location: /isabelle-prints/index.php');
+    // Redirect based on user type
+    if (isset($_SESSION['user_type']) && $_SESSION['user_type'] === 'admin') {
+        header('Location: /isabelle-prints/admin/dashboard.php');
+    } else {
+        header('Location: /isabelle-prints/index.php');
+    }
     exit;
 }
 
@@ -25,19 +30,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         $error = 'Please fill in all fields.';
     } else {
         try {
-            $stmt = $pdo->prepare("SELECT id, email, password, first_name, last_name FROM users WHERE email = ?");
+            // UPDATED: Include user_type in the query
+            $stmt = $pdo->prepare("SELECT id, email, password, first_name, last_name, user_type FROM users WHERE email = ? AND is_active = 1");
             $stmt->execute([$email]);
             $user = $stmt->fetch();
             
             if ($user && password_verify($password, $user['password'])) {
+                // Store user information in session
                 $_SESSION['user_id'] = $user['id'];
                 $_SESSION['user_email'] = $user['email'];
                 $_SESSION['user_name'] = $user['first_name'] . ' ' . $user['last_name'];
+                $_SESSION['user_type'] = $user['user_type']; // ADDED: Store user type
+                $_SESSION['first_name'] = $user['first_name'];
+                $_SESSION['last_name'] = $user['last_name'];
                 
-                // Redirect to intended page or products
-                $redirect = $_SESSION['redirect_after_login'] ?? '/isabelle-prints/index.php';
-                unset($_SESSION['redirect_after_login']);
-                header('Location: ' . $redirect);
+                // UPDATED: Redirect based on user type
+                if ($user['user_type'] === 'admin') {
+                    header('Location: /isabelle-prints/admin/dashboard.php');
+                } else {
+                    $redirect = $_SESSION['redirect_after_login'] ?? '/isabelle-prints/index.php';
+                    unset($_SESSION['redirect_after_login']);
+                    header('Location: ' . $redirect);
+                }
                 exit;
             } else {
                 $error = 'Invalid email or password.';
@@ -48,7 +62,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     }
 }
 
-// Handle registration
+// Handle registration (customers only)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'register') {
     $firstName = trim($_POST['first_name'] ?? '');
     $lastName = trim($_POST['last_name'] ?? '');
@@ -71,9 +85,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             if ($stmt->fetch()) {
                 $error = 'Email already registered.';
             } else {
-                // Create new user
+                // UPDATED: Create new customer user (not admin)
                 $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
-                $stmt = $pdo->prepare("INSERT INTO users (first_name, last_name, email, password, created_at) VALUES (?, ?, ?, ?, NOW())");
+                $stmt = $pdo->prepare("INSERT INTO users (first_name, last_name, email, password, user_type, is_active, created_at) VALUES (?, ?, ?, ?, 'customer', 1, NOW())");
                 
                 if ($stmt->execute([$firstName, $lastName, $email, $hashedPassword])) {
                     $success = 'Registration successful! You can now log in.';
@@ -86,6 +100,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         }
     }
 }
+
+// Rest of your existing code remains the same...
 
 // Generate Google OAuth URL
 function getGoogleAuthUrl() {
