@@ -156,24 +156,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <span class="badge badge-secondary badge-pill"><?= count($cartItems) ?></span>
                     </h4>
                     <ul class="list-group mb-3">
-                        <?php foreach ($cartItems as $item): ?>
-                            <li class="list-group-item d-flex justify-content-between lh-condensed">
-                                <div>
-                                    <h6 class="my-0"><?= htmlspecialchars($item['product']['name']) ?></h6>
-                                    <small class="text-muted">Quantity:
-                                        <form method="POST" style="display:inline;" class="quantity-form">
-                                            <input type="hidden" name="action" value="update_cart">
-                                            <input type="hidden" name="cart_key" value="<?= $item['cart_key'] ?>">
-                                            <button type="button" onclick="changeQuantity(this, -1)" class="btn btn-sm btn-outline-secondary">-</button>
-                                            <input type="number" name="quantity" value="<?= $item['quantity'] ?>" min="1" style="width:50px; text-align:center;" readonly>
-                                            <button type="button" onclick="changeQuantity(this, 1)" class="btn btn-sm btn-outline-secondary">+</button>
-                                            <button type="submit" style="display:none;">Update</button>
-                                        </form>
-                                    </small>
-                                </div>
-                                <span class="text-muted">₱<?= number_format($item['product']['base_price'] * $item['quantity'], 2) ?></span>
-                            </li>
-                        <?php endforeach; ?>
+                        
                         <li class="list-group-item d-flex justify-content-between">
                             <span>Total (PHP)</span>
                             <strong>₱<?= number_format($cartTotals['total'], 2) ?></strong>

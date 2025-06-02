@@ -138,8 +138,9 @@ $cartTotals = calculateCartTotal($pdo);
                                     <input type="hidden" name="action" value="update_cart">
                                     <input type="hidden" name="cart_key" value="<?php echo $item['cart_key']; ?>">
                                     <button type="button" class="qty-btn" onclick="changeQuantity(this, -1)">-</button>
-                                    <input type="number" name="quantity" value="<?php echo $item['quantity']; ?>" min="1" class="qty-input">
+                                    <input type="number" name="quantity" value="<?php echo $item['quantity']; ?>" min="1" class="qty-input" readonly>
                                     <button type="button" class="qty-btn" onclick="changeQuantity(this, 1)">+</button>
+                                    <button type="submit" style="display:none;">Update</button>
                                 </form>
                             </div>
                             
@@ -193,3 +194,14 @@ $cartTotals = calculateCartTotal($pdo);
 </main>
 
 <?php include '../includes/footer.php'; ?>
+
+<script>
+function changeQuantity(btn, delta) {
+    var form = btn.closest('form');
+    var input = form.querySelector('input[name="quantity"]');
+    var newValue = parseInt(input.value) + delta;
+    if (newValue < 1) newValue = 1;
+    input.value = newValue;
+    form.querySelector('button[type="submit"]').click();
+}
+</script>
