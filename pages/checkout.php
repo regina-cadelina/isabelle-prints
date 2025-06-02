@@ -7,12 +7,14 @@ if (!isset($_SESSION['user_id'])) {
     exit();
 }
 
-require_once('../config/db.php');
-require_once('../functions/cart.php');
+require_once '../config/database.php'; // Use your actual DB config file
+require_once '../includes/functions.php'; // Use your actual functions file
 
 // Fetch cart items
 $cartItems = getCartItems($pdo);
-$cartTotals = calculateCartTotals($cartItems);
+
+// Calculate cart totals (make sure this function exists and works)
+$cartTotals = calculateCartTotal($pdo); // Not calculateCartTotals
 
 // Handle form submission
 $error = null;
@@ -41,19 +43,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $paymentProofFile = null;
         if (isset($_FILES['payment_proof']) && $_FILES['payment_proof']['error'] === UPLOAD_ERR_OK) {
             $uploadDir = '../uploads/payment-proofs/';
-            
+
             // Create directory if it doesn't exist
             if (!is_dir($uploadDir)) {
                 mkdir($uploadDir, 0755, true);
             }
-            
+
             $fileExtension = strtolower(pathinfo($_FILES['payment_proof']['name'], PATHINFO_EXTENSION));
             $allowedExtensions = ['jpg', 'jpeg', 'png', 'pdf'];
-            
+
             if (in_array($fileExtension, $allowedExtensions)) {
                 $fileName = 'payment_' . time() . '_' . uniqid() . '.' . $fileExtension;
                 $uploadPath = $uploadDir . $fileName;
-                
+
                 if (move_uploaded_file($_FILES['payment_proof']['tmp_name'], $uploadPath)) {
                     $paymentProofFile = $fileName;
                 } else {
@@ -99,27 +101,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 foreach ($cartItems as $item) {
                     $stmt->execute([
                         $orderId,
-                        $item['product_id'],
+                        $item['product']['id'],
                         $item['quantity'],
-                        $item['price']
+                        $item['product']['base_price']
                     ]);
                 }
 
-                // Clear cart
-                clearCart($pdo, $_SESSION['user_id']);
+                // Clear cart (if you have a clearCart function, otherwise use unset)
+                if (function_exists('clearCart')) {
+                    clearCart($pdo, $_SESSION['user_id']);
+                } else {
+                    unset($_SESSION['cart']);
+                }
 
                 // Redirect to order confirmation page
                 header('Location: order_confirmation.php?order_id=' . $orderId);
                 exit();
-
             } catch (PDOException $e) {
                 $error = 'An error occurred while processing your order. Please try again.';
-                error_log("PDO Error: " . $e->getMessage()); // Log the error
+                error_log("PDO Error: " . $e->getMessage());
             }
         }
     }
 }
-
 ?>
 
 <!DOCTYPE html>
@@ -133,7 +137,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <link rel="stylesheet" href="../css/style.css">
 </head>
 <body>
-    <?php include('../includes/navbar.php'); ?>
+    <?php include('../includes/header.php'); ?>
 
     <div class="container mt-5">
         <h1>Checkout</h1>
@@ -155,10 +159,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <?php foreach ($cartItems as $item): ?>
                             <li class="list-group-item d-flex justify-content-between lh-condensed">
                                 <div>
-                                    <h6 class="my-0"><?= htmlspecialchars($item['name']) ?></h6>
-                                    <small class="text-muted">Quantity: <?= $item['quantity'] ?></small>
+                                    <h6 class="my-0"><?= htmlspecialchars($item['product']['name']) ?></h6>
+                                    <small class="text-muted">Quantity:
+                                        <form method="POST" style="display:inline;" class="quantity-form">
+                                            <input type="hidden" name="action" value="update_cart">
+                                            <input type="hidden" name="cart_key" value="<?= $item['cart_key'] ?>">
+                                            <button type="button" onclick="changeQuantity(this, -1)" class="btn btn-sm btn-outline-secondary">-</button>
+                                            <input type="number" name="quantity" value="<?= $item['quantity'] ?>" min="1" style="width:50px; text-align:center;" readonly>
+                                            <button type="button" onclick="changeQuantity(this, 1)" class="btn btn-sm btn-outline-secondary">+</button>
+                                            <button type="submit" style="display:none;">Update</button>
+                                        </form>
+                                    </small>
                                 </div>
-                                <span class="text-muted">₱<?= number_format($item['price'] * $item['quantity'], 2) ?></span>
+                                <span class="text-muted">₱<?= number_format($item['product']['base_price'] * $item['quantity'], 2) ?></span>
                             </li>
                         <?php endforeach; ?>
                         <li class="list-group-item d-flex justify-content-between">
@@ -220,5 +233,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.3/dist/umd/popper.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script>
+function changeQuantity(btn, delta) {
+    var form = btn.closest('form');
+    var input = form.querySelector('input[name="quantity"]');
+    var newValue = parseInt(input.value) + delta;
+    if (newValue < 1) newValue = 1;
+    input.value = newValue;
+    form.querySelector('button[type="submit"]').click();
+}
+</script>
 </body>
 </html>

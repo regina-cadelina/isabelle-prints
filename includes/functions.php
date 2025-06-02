@@ -91,4 +91,14 @@ function getCurrentUser($pdo) {
     $stmt->execute([$_SESSION['user_id']]);
     return $stmt->fetch();
 }
+
+function clearCart($pdo, $user_id) {
+    // Clear session cart
+    unset($_SESSION['cart']);
+
+    // Optional: Clear cart from database if you store cart items in DB
+    // Example:
+    // $stmt = $pdo->prepare("DELETE FROM cart_items WHERE user_id = ?");
+    // $stmt->execute([$user_id]);
+}
 ?>

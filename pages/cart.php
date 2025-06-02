@@ -1,34 +1,94 @@
 <?php
+ob_start(); // Start buffering
+session_start();
+
+// Initialize cart if not set
+if (!isset($_SESSION['cart'])) {
+    $_SESSION['cart'] = [];
+}
+
+// Handle form actions BEFORE any output
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
+    $action = $_POST['action'];
+
+    if ($action === 'update_cart') {
+        $cartKey = $_POST['cart_key'] ?? null;
+        $quantity = $_POST['quantity'] ?? null;
+
+        if ($cartKey && is_numeric($quantity)) {
+            $quantity = (int)$quantity;
+            if ($quantity <= 0) {
+                unset($_SESSION['cart'][$cartKey]);
+            } else {
+                $_SESSION['cart'][$cartKey]['quantity'] = $quantity;
+            }
+        }
+
+        header('Location: cart.php');
+        exit;
+    }
+
+    if ($action === 'remove_item') {
+        $cartKey = $_POST['cart_key'] ?? null;
+        if ($cartKey && isset($_SESSION['cart'][$cartKey])) {
+            unset($_SESSION['cart'][$cartKey]);
+        }
+
+        header('Location: cart.php');
+        exit;
+    }
+
+    if ($action === 'clear_cart') {
+        unset($_SESSION['cart']);
+        header('Location: cart.php');
+        exit;
+    }
+}
+
 $pageTitle = "Shopping Cart";
 include '../includes/header.php';
+require_once '../config/database.php';
+require_once '../includes/functions.php';
+
+$cartItems = getCartItems($pdo);
+$cartTotals = calculateCartTotal($pdo);
 
 // Handle cart updates
-if ($_POST['action'] ?? '' == 'update_cart') {
-    $cartKey = $_POST['cart_key'];
-    $quantity = (int)$_POST['quantity'];
-    
-    if ($quantity <= 0) {
-        unset($_SESSION['cart'][$cartKey]);
-    } else {
-        $_SESSION['cart'][$cartKey]['quantity'] = $quantity;
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
+    $action = $_POST['action'];
+
+    if ($action === 'update_cart') {
+        $cartKey = $_POST['cart_key'] ?? null;
+        $quantity = $_POST['quantity'] ?? null;
+
+        if ($cartKey && is_numeric($quantity)) {
+            $quantity = (int)$quantity;
+            if ($quantity <= 0) {
+                unset($_SESSION['cart'][$cartKey]);
+            } else {
+                $_SESSION['cart'][$cartKey]['quantity'] = $quantity;
+            }
+        }
+
+        header('Location: cart.php');
+        exit;
     }
-    
-    header('Location: cart.php');
-    exit;
-}
 
-if ($_POST['action'] ?? '' == 'remove_item') {
-    $cartKey = $_POST['cart_key'];
-    unset($_SESSION['cart'][$cartKey]);
-    
-    header('Location: cart.php');
-    exit;
-}
+    if ($action === 'remove_item') {
+        $cartKey = $_POST['cart_key'] ?? null;
+        if ($cartKey && isset($_SESSION['cart'][$cartKey])) {
+            unset($_SESSION['cart'][$cartKey]);
+        }
 
-if ($_POST['action'] ?? '' == 'clear_cart') {
-    unset($_SESSION['cart']);
-    header('Location: cart.php');
-    exit;
+        header('Location: cart.php');
+        exit;
+    }
+
+    if ($action === 'clear_cart') {
+        unset($_SESSION['cart']);
+        header('Location: cart.php');
+        exit;
+    }
 }
 
 $cartItems = getCartItems($pdo);
