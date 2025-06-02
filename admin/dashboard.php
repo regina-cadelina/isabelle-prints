@@ -1,13 +1,13 @@
 <?php
-require_once '../includes/config.php';
+require_once '../config/database.php';
+require_once '../includes/functions.php';
 
-// Check if user is admin
-if (!isLoggedIn() || getCurrentUser()['user_type'] !== 'admin') {
-    redirect('../login.php');
-}
+// Require admin access
+requireAdmin();
 
 $current_user = getCurrentUser();
 
+// Rest of your dashboard code remains the same...
 // Get dashboard statistics
 $stats = [];
 
@@ -27,16 +27,6 @@ $stats['pending_orders'] = $stmt->fetch()['count'];
 $stmt = $pdo->query("SELECT COUNT(*) as count FROM users WHERE user_type = 'customer'");
 $stats['total_customers'] = $stmt->fetch()['count'];
 
-// Recent orders
-$stmt = $pdo->query("SELECT o.*, u.first_name, u.last_name FROM orders o 
-                     LEFT JOIN users u ON o.user_id = u.user_id 
-                     ORDER BY o.created_at DESC LIMIT 5");
-$recent_orders = $stmt->fetchAll();
-
-// Low stock products
-$stmt = $pdo->query("SELECT * FROM products WHERE stock_quantity < 10 AND is_active = 1 ORDER BY stock_quantity ASC LIMIT 5");
-$low_stock = $stmt->fetchAll();
-
 $page_title = "Admin Dashboard";
 ?>
 
@@ -45,9 +35,9 @@ $page_title = "Admin Dashboard";
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?php echo $page_title . ' - ' . SITE_NAME; ?></title>
-    <link rel="stylesheet" href="../css/style.css">
-    <link rel="stylesheet" href="../css/admin.css">
+    <title><?php echo $page_title; ?></title>
+    <link rel="stylesheet" href="../assets/css/style.css">
+    <link rel="stylesheet" href="../assets/css/admin.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
 <body class="admin-body">
@@ -59,10 +49,12 @@ $page_title = "Admin Dashboard";
             </div>
             <div class="admin-user">
                 <span>Welcome, <?php echo htmlspecialchars($current_user['first_name']); ?></span>
-                <a href="../logout.php" class="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</a>
+                <a href="../pages/logout.php" class="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</a>
             </div>
         </div>
     </header>
+
+    <!-- Rest of your dashboard HTML... -->
 
     <div class="admin-container">
         <!-- Sidebar -->
