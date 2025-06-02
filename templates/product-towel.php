@@ -70,6 +70,19 @@
                 <textarea name="notes" class="form-control" placeholder="Add any special instructions for your towel design..."></textarea>
             </div>
             
+            <div class="form-group">
+                <label for="custom_file">Upload Custom Image:</label>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <!-- Image Preview -->
+                    <div id="customImagePreview" style="margin-right:10px;">
+                        <img id="previewImg" src="#" alt="Preview" style="display:none; max-width:60px; max-height:60px; border:1px solid #ccc; border-radius:8px;"/>
+                    </div>
+                    <!-- File Input and Upload Button -->
+                    <input type="file" name="custom_file" id="custom_file" accept=".jpg,.jpeg,.png,.pdf" style="margin-right:5px;">
+                    <button type="button" onclick="uploadCustomFile()" class="btn btn-outline-primary">Upload</button>
+                </div>
+            </div>
+            
             <div class="form-actions">
                 <button type="button" class="btn btn-primary" onclick="addToCartModal()">ADD TO CART</button>
                 <button type="button" class="btn btn-secondary" onclick="closeModal()">VIEW DETAILS</button>
@@ -77,3 +90,31 @@
         </form>
     </div>
 </div>
+
+<script>
+document.getElementById('custom_file').addEventListener('change', function(event) {
+    const preview = document.getElementById('previewImg');
+    const file = event.target.files[0];
+    if (file && file.type.match('image.*')) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            preview.src = e.target.result;
+            preview.style.display = 'block';
+        }
+        reader.readAsDataURL(file);
+    } else {
+        preview.src = '#';
+        preview.style.display = 'none';
+    }
+});
+
+// Dummy upload handler for modal demo (replace with AJAX if needed)
+function uploadCustomFile() {
+    const fileInput = document.getElementById('custom_file');
+    if (!fileInput.files.length) {
+        alert('Please select a file to upload.');
+        return;
+    }
+    alert('File ready to upload! (Implement AJAX upload as needed)');
+}
+</script>
