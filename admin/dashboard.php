@@ -12,7 +12,7 @@ $current_user = getCurrentUser();
 $stats = [];
 
 // Total products
-$stmt = $pdo->query("SELECT COUNT(*) as count FROM products WHERE is_active = 1");
+$stmt = $pdo->query("SELECT COUNT(*) as count FROM products WHERE status = 'active'");
 $stats['total_products'] = $stmt->fetch()['count'];
 
 // Total orders
@@ -20,7 +20,7 @@ $stmt = $pdo->query("SELECT COUNT(*) as count FROM orders");
 $stats['total_orders'] = $stmt->fetch()['count'];
 
 // Pending orders
-$stmt = $pdo->query("SELECT COUNT(*) as count FROM orders WHERE order_status = 'pending'");
+$stmt = $pdo->query("SELECT COUNT(*) as count FROM orders WHERE status = 'pending'");
 $stats['pending_orders'] = $stmt->fetch()['count'];
 
 // Total customers
