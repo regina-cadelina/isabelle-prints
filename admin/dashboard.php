@@ -7,12 +7,11 @@ requireAdmin();
 
 $current_user = getCurrentUser();
 
-// Rest of your dashboard code remains the same...
-// Get dashboard statistics
+// Dashboard statistics
 $stats = [];
 
 // Total products
-$stmt = $pdo->query("SELECT COUNT(*) as count FROM products WHERE is_active = 1");
+$stmt = $pdo->query("SELECT COUNT(*) as count FROM products WHERE status = 'active'");
 $stats['total_products'] = $stmt->fetch()['count'];
 
 // Total orders
@@ -20,12 +19,33 @@ $stmt = $pdo->query("SELECT COUNT(*) as count FROM orders");
 $stats['total_orders'] = $stmt->fetch()['count'];
 
 // Pending orders
-$stmt = $pdo->query("SELECT COUNT(*) as count FROM orders WHERE order_status = 'pending'");
+$stmt = $pdo->query("SELECT COUNT(*) as count FROM orders WHERE status = 'pending'");
 $stats['pending_orders'] = $stmt->fetch()['count'];
 
 // Total customers
 $stmt = $pdo->query("SELECT COUNT(*) as count FROM users WHERE user_type = 'customer'");
 $stats['total_customers'] = $stmt->fetch()['count'];
+
+// Recent orders (latest 5)
+$stmt = $pdo->query("
+    SELECT o.order_number, o.status, o.total_amount, o.created_at, u.first_name, u.last_name
+    FROM orders o
+    LEFT JOIN users u ON o.user_id = u.id
+    ORDER BY o.created_at DESC
+    LIMIT 5
+");
+$recent_orders = $stmt->fetchAll();
+
+// Low stock products (stock < 10, show up to 5)
+$stmt = $pdo->query("
+    SELECT p.id as product_id, p.name as product_name, p.base_price, p.status, p.is_bestseller, p.is_new, 
+           IFNULL(p.stock_quantity, 0) as stock_quantity
+    FROM products p
+    WHERE IFNULL(p.stock_quantity, 0) < 10 AND p.status = 'active'
+    ORDER BY p.stock_quantity ASC
+    LIMIT 5
+");
+$low_stock = $stmt->fetchAll();
 
 $page_title = "Admin Dashboard";
 ?>
@@ -53,8 +73,6 @@ $page_title = "Admin Dashboard";
             </div>
         </div>
     </header>
-
-    <!-- Rest of your dashboard HTML... -->
 
     <div class="admin-container">
         <!-- Sidebar -->
@@ -139,9 +157,9 @@ $page_title = "Admin Dashboard";
                                 <tbody>
                                     <?php foreach ($recent_orders as $order): ?>
                                     <tr>
-                                        <td>#<?php echo $order['order_number']; ?></td>
-                                        <td><?php echo htmlspecialchars($order['first_name'] . ' ' . $order['last_name']); ?></td>
-                                        <td><span class="status-badge <?php echo $order['order_status']; ?>"><?php echo ucfirst($order['order_status']); ?></span></td>
+                                        <td>#<?php echo htmlspecialchars($order['order_number']); ?></td>
+                                        <td><?php echo htmlspecialchars(trim($order['first_name'] . ' ' . $order['last_name'])); ?></td>
+                                        <td><span class="status-badge <?php echo htmlspecialchars($order['status']); ?>"><?php echo ucfirst($order['status']); ?></span></td>
                                         <td><?php echo formatPrice($order['total_amount']); ?></td>
                                         <td><?php echo date('M j, Y', strtotime($order['created_at'])); ?></td>
                                     </tr>

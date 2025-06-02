@@ -1,6 +1,6 @@
 <?php
-require_once '../includes/config.php';
-
+require_once '../config/database.php';
+require_once '../includes/functions.php';
 // Check if user is admin
 if (!isLoggedIn() || getCurrentUser()['user_type'] !== 'admin') {
     redirect('../login.php');
@@ -13,7 +13,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['action'])) {
         switch ($_POST['action']) {
             case 'add_product':
-                $stmt = $pdo->prepare("INSERT INTO products (category_id, product_name, product_slug, description, short_description, base_price, sku, stock_quantity, is_featured, is_bestseller, is_new) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                $stmt = $pdo->prepare("INSERT INTO products (category_id, product_name, product_slug, description, short_description, base_price, sku, stock_quantity, is_bestseller, is_new) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
                 $slug = strtolower(str_replace(' ', '-', $_POST['product_name']));
                 $stmt->execute([
                     $_POST['category_id'],
@@ -32,7 +32,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 break;
                 
             case 'update_product':
-                $stmt = $pdo->prepare("UPDATE products SET category_id = ?, product_name = ?, description = ?, short_description = ?, base_price = ?, sku = ?, stock_quantity = ?, is_featured = ?, is_bestseller = ?, is_new = ? WHERE product_id = ?");
+                $stmt = $pdo->prepare("UPDATE products SET category_id = ?, product_name = ?, description = ?, short_description = ?, base_price = ?, sku = ?, stock_quantity = ?, is_bestseller = ?, is_new = ? WHERE product_id = ?");
                 $stmt->execute([
                     $_POST['category_id'],
                     $_POST['product_name'],
@@ -59,11 +59,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // Get products
-$stmt = $pdo->query("SELECT p.*, c.category_name FROM products p LEFT JOIN categories c ON p.category_id = c.category_id WHERE p.is_active = 1 ORDER BY p.created_at DESC");
+$stmt = $pdo->query("SELECT p.*, c.name AS category_name FROM products p LEFT JOIN categories c ON p.category_id = c.id WHERE p.status = 'active' ORDER BY p.created_at DESC");
 $products = $stmt->fetchAll();
 
 // Get categories for dropdown
-$stmt = $pdo->query("SELECT * FROM categories WHERE is_active = 1 ORDER BY category_name");
+$stmt = $pdo->query("SELECT * FROM categories WHERE is_active = 1 ORDER BY name");
 $categories = $stmt->fetchAll();
 
 // Get product for editing if edit parameter is set
@@ -82,7 +82,7 @@ $page_title = "Manage Products";
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?php echo $page_title . ' - ' . SITE_NAME; ?></title>
+    <title><?php echo $page_title; ?></title>
     <link rel="stylesheet" href="../css/style.css">
     <link rel="stylesheet" href="../css/admin.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
@@ -147,9 +147,9 @@ $page_title = "Manage Products";
                                 <select id="category_id" name="category_id" class="form-control" required>
                                     <option value="">Select Category</option>
                                     <?php foreach ($categories as $category): ?>
-                                        <option value="<?php echo $category['category_id']; ?>" 
-                                                <?php echo ($edit_product && $edit_product['category_id'] == $category['category_id']) ? 'selected' : ''; ?>>
-                                            <?php echo htmlspecialchars($category['category_name']); ?>
+                                        <option value="<?php echo $category['id']; ?>" 
+                                                <?php echo ($edit_product && $edit_product['category_id'] == $category['id']) ? 'selected' : ''; ?>>
+                                            <?php echo htmlspecialchars($category['name']); ?>
                                         </option>
                                     <?php endforeach; ?>
                                 </select>
@@ -190,10 +190,7 @@ $page_title = "Manage Products";
                         <div class="form-group">
                             <label>Product Flags</label>
                             <div class="checkbox-group">
-                                <label class="checkbox-label">
-                                    <input type="checkbox" name="is_featured" <?php echo ($edit_product && $edit_product['is_featured']) ? 'checked' : ''; ?>>
-                                    Featured Product
-                                </label>
+                                
                                 <label class="checkbox-label">
                                     <input type="checkbox" name="is_bestseller" <?php echo ($edit_product && $edit_product['is_bestseller']) ? 'checked' : ''; ?>>
                                     Bestseller
@@ -235,8 +232,10 @@ $page_title = "Manage Products";
                                 <?php foreach ($products as $product): ?>
                                 <tr>
                                     <td>
-                                        <strong><?php echo htmlspecialchars($product['product_name']); ?></strong>
-                                        <br><small><?php echo htmlspecialchars($product['sku']); ?></small>
+                                        <?php if (!empty($product['is_bestseller'])): ?><span class="badge bestseller">Bestseller</span><?php endif; ?>
+                                        <?php if (!empty($product['is_new'])): ?><span class="badge new">New</span><?php endif; ?>
+                                        <strong><?php echo htmlspecialchars($product['name']); ?></strong>
+                                        <br><small><?php echo htmlspecialchars($product['slug']); ?></small>
                                     </td>
                                     <td><?php echo htmlspecialchars($product['category_name']); ?></td>
                                     <td><?php echo formatPrice($product['base_price']); ?></td>
@@ -246,15 +245,15 @@ $page_title = "Manage Products";
                                         </span>
                                     </td>
                                     <td>
-                                        <?php if ($product['is_featured']): ?><span class="badge featured">Featured</span><?php endif; ?>
+                                        
                                         <?php if ($product['is_bestseller']): ?><span class="badge bestseller">Bestseller</span><?php endif; ?>
                                         <?php if ($product['is_new']): ?><span class="badge new">New</span><?php endif; ?>
                                     </td>
                                     <td>
-                                        <a href="products.php?edit=<?php echo $product['product_id']; ?>" class="btn-small">Edit</a>
+                                        <a href="products.php?edit=<?php echo $product['id']; ?>" class="btn-small">Edit</a>
                                         <form method="POST" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete this product?')">
                                             <input type="hidden" name="action" value="delete_product">
-                                            <input type="hidden" name="product_id" value="<?php echo $product['product_id']; ?>">
+                                            <input type="hidden" name="product_id" value="<?php echo $product['id']; ?>">
                                             <button type="submit" class="btn-small btn-danger">Delete</button>
                                         </form>
                                     </td>
@@ -280,11 +279,7 @@ $page_title = "Manage Products";
             gap: 20px;
         }
         
-        .checkbox-label {
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
+        
         
         .form-actions {
             margin-top: 20px;
