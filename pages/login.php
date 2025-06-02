@@ -1,8 +1,4 @@
 <?php
-// Enable error reporting for debugging
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
-
 session_start();
 $pageTitle = "Login";
 
@@ -13,7 +9,7 @@ require_once '../config/google-config.php';
 
 // Check if user is already logged in
 if (isset($_SESSION['user_id'])) {
-    header('Location: /isabelle-prints/pages/products.php');
+    header('Location: /isabelle-prints/index.php');
     exit;
 }
 
@@ -21,7 +17,7 @@ $error = '';
 $success = '';
 
 // Handle regular login
-if ($_POST['action'] ?? '' == 'login') {
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'login') {
     $email = trim($_POST['email'] ?? '');
     $password = $_POST['password'] ?? '';
     
@@ -39,7 +35,7 @@ if ($_POST['action'] ?? '' == 'login') {
                 $_SESSION['user_name'] = $user['first_name'] . ' ' . $user['last_name'];
                 
                 // Redirect to intended page or products
-                $redirect = $_SESSION['redirect_after_login'] ?? '/isabelle-prints/pages/products.php';
+                $redirect = $_SESSION['redirect_after_login'] ?? '/isabelle-prints/index.php';
                 unset($_SESSION['redirect_after_login']);
                 header('Location: ' . $redirect);
                 exit;
@@ -53,14 +49,14 @@ if ($_POST['action'] ?? '' == 'login') {
 }
 
 // Handle registration
-if ($_POST['action'] ?? '' == 'register') {
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'register') {
     $firstName = trim($_POST['first_name'] ?? '');
     $lastName = trim($_POST['last_name'] ?? '');
     $email = trim($_POST['email'] ?? '');
     $password = $_POST['password'] ?? '';
     $confirmPassword = $_POST['confirm_password'] ?? '';
     
-    if (empty($firstName) || empty($lastName) || empty($email) || empty($password)) {
+    if (empty($firstName) || empty($lastName) || empty($email) || empty($password) || empty($confirmPassword)) {
         $error = 'Please fill in all fields.';
     } elseif ($password !== $confirmPassword) {
         $error = 'Passwords do not match.';
@@ -111,11 +107,11 @@ include '../includes/header.php';
 <main class="login-page">
     <div class="container">
         <div class="login-container">
-            <div class="login-tabs">
-                <button class="tab-btn active" onclick="showTab('login')">Login</button>
-                <button class="tab-btn" onclick="showTab('register')">Register</button>
+            <div class="login-header">
+                <h1>Welcome Back</h1>
+                <p>Sign in to your account or create a new one</p>
             </div>
-
+            
             <?php if ($error): ?>
                 <div class="alert alert-error"><?php echo htmlspecialchars($error); ?></div>
             <?php endif; ?>
@@ -123,6 +119,11 @@ include '../includes/header.php';
             <?php if ($success): ?>
                 <div class="alert alert-success"><?php echo htmlspecialchars($success); ?></div>
             <?php endif; ?>
+
+            <div class="login-tabs">
+                <button class="tab-btn active" onclick="showTab('login')">Login</button>
+                <button class="tab-btn" onclick="showTab('register')">Register</button>
+            </div>
 
             <!-- Login Form -->
             <div id="login-tab" class="tab-content active">
@@ -223,7 +224,11 @@ function showTab(tabName) {
     document.getElementById(tabName + '-tab').classList.add('active');
     
     // Add active class to clicked button
-    event.target.classList.add('active');
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        if (btn.textContent.toLowerCase() === tabName) {
+            btn.classList.add('active');
+        }
+    });
 }
 </script>
 
