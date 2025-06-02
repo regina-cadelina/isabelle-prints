@@ -20,15 +20,15 @@ $authCode = $_GET['code'];
 try {
     // Exchange authorization code for access token
     $tokenData = [
-        'client_id' => GOOGLE_CLIENT_ID,
-        'client_secret' => GOOGLE_CLIENT_SECRET,
+        'client_id' => '23042345108-l7dg6vqrr1jnb83efue17ojemldlvnar.apps.googleusercontent.com',
+        'client_secret' => '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',
         'code' => $authCode,
         'grant_type' => 'authorization_code',
-        'redirect_uri' => GOOGLE_REDIRECT_URI
+        'redirect_uri' => 'http://localhost/isabelle-prints/auth/google-callback.php'
     ];
 
     $ch = curl_init();
-    curl_setopt($ch, CURLOPT_URL, GOOGLE_TOKEN_URL);
+    curl_setopt($ch, CURLOPT_URL, 'https://oauth2.googleapis.com/token');
     curl_setopt($ch, CURLOPT_POST, true);
     curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($tokenData));
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
@@ -58,7 +58,7 @@ try {
 
     // Get user information from Google
     $ch = curl_init();
-    curl_setopt($ch, CURLOPT_URL, GOOGLE_USER_INFO_URL);
+    curl_setopt($ch, CURLOPT_URL, 'https://oauth2.googleapis.com/token');
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false); // For localhost testing
     curl_setopt($ch, CURLOPT_HTTPHEADER, [
