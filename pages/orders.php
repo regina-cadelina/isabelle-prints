@@ -4,6 +4,8 @@ require_once '../config/database.php';
 $pageTitle = "My Orders";
 include '../includes/header.php';
 
+$success = '';
+
 // Check if user is logged in
 if (!isLoggedIn()) {
     $_SESSION['redirect_after_login'] = '/isabelle-prints/pages/orders.php';
@@ -28,7 +30,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['cancel_order_id'])) {
     }
 }
 
-$success = '';
 if (isset($_GET['success']) && $_GET['success'] === 'order_placed') {
     $success = 'Your order has been placed successfully! We will review your payment and update the status shortly.';
 }
@@ -36,7 +37,7 @@ if (isset($_GET['success']) && $_GET['success'] === 'order_placed') {
 // Get user's orders
 $stmt = $pdo->prepare("
     SELECT o.*, 
-           o.payment_status,  -- Add this line if not already present
+           o.payment_status,
            COUNT(oi.id) as item_count,
            GROUP_CONCAT(p.name SEPARATOR ', ') as product_names
     FROM orders o 
@@ -82,21 +83,19 @@ $orders = $stmt->fetchAll();
                                 <p class="order-date">Placed on <?php echo date('F j, Y', strtotime($order['created_at'])); ?></p>
                             </div>
                             <div class="order-status">
-                                <span class="status-badge status-<?php echo $order['status']; ?>">
-                                    <?php echo ucfirst($order['status']); ?>
+                                <span class="status-badge status-<?php echo htmlspecialchars($order['status']); ?>">
+                                    <?php echo ucfirst(htmlspecialchars($order['status'])); ?>
                                 </span>
-                                <span class="payment-badge payment-<?php echo $order['payment_status']; ?>" style="margin-left:10px;">
-                                    <?php echo 'Payment: ' . ucfirst($order['payment_status']); ?>
+                                <span class="payment-badge payment-<?php echo htmlspecialchars($order['payment_status']); ?>" style="margin-left:10px;">
+                                    <?php echo 'Payment: ' . ucfirst(htmlspecialchars($order['payment_status'])); ?>
                                 </span>
                             </div>
                         </div>
-                        
                         <div class="order-details">
                             <div class="order-items">
                                 <p><strong>Items:</strong> <?php echo htmlspecialchars($order['product_names']); ?></p>
-                                <p><strong>Total Items:</strong> <?php echo $order['item_count']; ?></p>
+                                <p><strong>Total Items:</strong> <?php echo (int)$order['item_count']; ?></p>
                             </div>
-                            
                             <div class="order-amounts">
                                 <div class="amount-row">
                                     <span>Total Amount:</span>
@@ -112,25 +111,17 @@ $orders = $stmt->fetchAll();
                                 </div>
                             </div>
                         </div>
-                        
                         <div class="order-actions">
-                            <button class="btn btn-secondary" onclick="viewOrderDetails(<?php echo $order['id']; ?>)">
-                                View Details
+                            <button class="btn btn-secondary" onclick="viewOrderDetails('<?php echo htmlspecialchars($order['order_number']); ?>')">
+                                <i class="fas fa-eye"></i> View Details
                             </button>
-                            <?php if ($order['status'] === 'pending' || $order['status'] === 'processing'): ?>
-                                <form method="POST" style="display:inline;" onsubmit="return confirm('Are you sure you want to cancel this order?');">
-                                    <input type="hidden" name="cancel_order_id" value="<?php echo $order['id']; ?>">
-                                    <button type="submit" class="btn btn-danger">Cancel Order</button>
+                            <?php if (in_array($order['status'], ['pending', 'processing'])): ?>
+                                <form method="post" style="display:inline;">
+                                    <input type="hidden" name="cancel_order_id" value="<?php echo (int)$order['id']; ?>">
+                                    <button type="submit" class="btn btn-danger" onclick="return confirm('Cancel this order?');">
+                                        <i class="fas fa-times"></i> Cancel Order
+                                    </button>
                                 </form>
-                            <?php endif; ?>
-                            <?php if ($order['status'] === 'pending'): ?>
-                                <span class="payment-status">Payment under review</span>
-                            <?php elseif ($order['status'] === 'processing'): ?>
-                                <span class="payment-status">Order being processed</span>
-                            <?php elseif ($order['status'] === 'shipped'): ?>
-                                <span class="payment-status">Order shipped</span>
-                            <?php elseif ($order['status'] === 'delivered'): ?>
-                                <span class="payment-status">Order delivered</span>
                             <?php endif; ?>
                         </div>
                     </div>
@@ -151,14 +142,13 @@ $orders = $stmt->fetchAll();
 </div>
 
 <script>
-function viewOrderDetails(orderId) {
+function viewOrderDetails(orderNumber) {
     const modal = document.getElementById('orderModal');
     const modalContent = document.getElementById('orderModalContent');
-    
     modalContent.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i> Loading...</div>';
     modal.style.display = 'block';
-    
-    fetch(`/isabelle-prints/api/order-details.php?id=${orderId}`)
+
+    fetch(`/isabelle-prints/api/order-details.php?order_number=${encodeURIComponent(orderNumber)}`)
         .then(response => response.text())
         .then(html => {
             modalContent.innerHTML = html;
@@ -172,13 +162,11 @@ function viewOrderDetails(orderId) {
 document.addEventListener('DOMContentLoaded', function() {
     const modal = document.getElementById('orderModal');
     const closeBtn = document.querySelector('.close');
-    
     if (closeBtn) {
         closeBtn.onclick = function() {
             modal.style.display = 'none';
         }
     }
-    
     window.onclick = function(event) {
         if (event.target == modal) {
             modal.style.display = 'none';

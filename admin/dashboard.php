@@ -69,7 +69,6 @@ $page_title = "Admin Dashboard";
                 <h2><i class="fas fa-cog"></i> Admin Panel</h2>
             </div>
             <div class="admin-user">
-                <span>&nbsp Welcome, <?php echo htmlspecialchars($current_user['first_name']); ?></span>
                 <a href="../pages/logout.php" class="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</a>
             </div>
         </div>
@@ -81,6 +80,7 @@ $page_title = "Admin Dashboard";
             <nav class="admin-menu">
                 <ul>
                     <li><a href="dashboard.php" class="active"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+                    <li><a href="categories.php"><i class="fas fa-tags"></i> Manage Categories</a></li>
                     <li><a href="products.php"><i class="fas fa-box"></i> Manage Products</a></li>
                     <li><a href="orders.php"><i class="fas fa-shopping-cart"></i> Manage Orders</a></li>
                     <li><a href="customers.php"><i class="fas fa-users"></i> Customers</a></li>

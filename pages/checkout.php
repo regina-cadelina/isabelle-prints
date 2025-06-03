@@ -34,6 +34,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $referenceNumber = trim($_POST['reference_number'] ?? '');
     $bankOwnerName = trim($_POST['bank_owner_name'] ?? '');
     $bankName = trim($_POST['bank_name'] ?? '');
+    $phone = trim($_POST['phone'] ?? '');
 
     if (empty($shippingAddress)) {
         $error = 'Shipping address is required.';
@@ -45,6 +46,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error = 'Bank owner name is required.';
     } elseif (empty($bankName)) {
         $error = 'Bank name is required.';
+    } elseif (empty($phone)) {
+        $error = 'Phone number is required.';
     }
 
     $paymentProofFile = null;
@@ -135,6 +138,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $item['customization_notes'] ?? null,
                     $item['file_upload'] ?? null
                 ]);
+
+                // Subtract stock
+                $updateStockStmt = $pdo->prepare("UPDATE products SET stock_quantity = stock_quantity - ? WHERE id = ?");
+                $updateStockStmt->execute([$quantity, $item['product']['id']]);
             }
 
             if (function_exists('clearCart')) {
@@ -207,6 +214,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <div class="mb-3">
                         <label for="billing_address">Billing Address</label>
                         <input type="text" class="form-control" id="billing_address" name="billing_address" required value="<?= htmlspecialchars($_POST['billing_address'] ?? '') ?>">
+                    </div>
+                    <div class="mb-3">
+                        <label for="phone">Phone Number</label>
+                        <input type="text" class="form-control" id="phone" name="phone" required value="<?= htmlspecialchars($_POST['phone'] ?? '') ?>">
                     </div>
 
                     <h4 class="mb-3">Payment Information</h4>
