@@ -378,11 +378,11 @@
 .btn-danger {
     background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
     color: white;
-    padding: 12px 24px;
+    padding: 2px 4px;
     border: none;
-    border-radius: 6px;
+    border-radius: 3px;
     cursor: pointer;
-    font-weight: 600;
+    font-weight: 100;
     transition: all 0.3s ease;
 }
 

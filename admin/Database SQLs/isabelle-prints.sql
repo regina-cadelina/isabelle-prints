@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Jun 03, 2025 at 03:36 AM
+-- Generation Time: Jun 03, 2025 at 04:36 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -98,21 +98,26 @@ CREATE TABLE `orders` (
   `bank_owner_name` varchar(255) DEFAULT NULL,
   `bank_name` varchar(100) DEFAULT NULL,
   `billing_address` varchar(255) NOT NULL,
-  `shipping_address` varchar(255) NOT NULL
+  `shipping_address` varchar(255) NOT NULL,
+  `payment_status` varchar(20) NOT NULL DEFAULT 'unpaid'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `orders`
 --
 
-INSERT INTO `orders` (`id`, `user_id`, `order_number`, `status`, `subtotal`, `shipping_cost`, `total_amount`, `created_at`, `downpayment_amount`, `payment_proof_file`, `reference_number`, `bank_owner_name`, `bank_name`, `billing_address`, `shipping_address`) VALUES
-(79, 6, '', 'pending', 0.00, 0.00, 92.37, '2025-06-02 07:42:57', 46.18, 'payment_1748850177_683d5601b28d3.png', 'sdfsdf', 'fsdfsdf', 'sdfsdfsdf', 'fsdfsdf', 'fddfsf'),
-(86, 6, 'ORD-20250602-2EC64FC3', 'pending', 79.98, 5.99, 92.37, '2025-06-02 07:50:13', 46.18, 'payment_1748850613_683d57b5b4324.png', 'sdfsdf', 'fsdfsdf', 'sdfsdfsdf', 'fsdfsdf', 'fddfsf'),
-(87, 6, 'ORD-20250602-4C18BD35', 'pending', 0.00, 5.99, 5.99, '2025-06-02 07:50:27', 3.00, 'payment_1748850627_683d57c3cd8dc.png', 'sdfsdf', 'fsdfsdf', 'sdfsdfsdf', 'fsdfsdf', 'fddfsf'),
-(88, 6, 'ORD-20250602-1D2DD50D', 'pending', 0.00, 5.99, 5.99, '2025-06-02 07:50:31', 3.00, 'payment_1748850631_683d57c76abd0.png', 'sdfsdf', 'fsdfsdf', 'sdfsdfsdf', 'fsdfsdf', 'fddfsf'),
-(89, 6, 'ORD-20250602-CAED8DCC', 'pending', 49.99, 5.99, 59.98, '2025-06-02 07:51:10', 29.99, 'payment_1748850670_683d57ee8a37c.png', 'asdsadadassa', 'asdasdasdasd', 'adasddsad', 'asdassad', 'asdasdasd'),
-(90, 2, 'ORD-20250602-1C822F2D', 'pending', 59.99, 5.99, 70.78, '2025-06-02 08:20:07', 35.39, 'payment_1748852407_683d5eb76931e.png', '123789', 'Benjo Estrella', 'BDO', '1234567', 'altura'),
-(91, 2, 'ORD-20250602-FB49961C', 'pending', 29.99, 5.99, 38.38, '2025-06-02 08:30:40', 19.19, 'payment_1748853040_683d613044c3b.png', '123789', 'Benjo Estrella', 'BDO', '1234567', 'altura');
+INSERT INTO `orders` (`id`, `user_id`, `order_number`, `status`, `subtotal`, `shipping_cost`, `total_amount`, `created_at`, `downpayment_amount`, `payment_proof_file`, `reference_number`, `bank_owner_name`, `bank_name`, `billing_address`, `shipping_address`, `payment_status`) VALUES
+(79, 6, '', 'pending', 0.00, 0.00, 92.37, '2025-06-02 07:42:57', 46.18, 'payment_1748850177_683d5601b28d3.png', 'sdfsdf', 'fsdfsdf', 'sdfsdfsdf', 'fsdfsdf', 'fddfsf', 'unpaid'),
+(86, 6, 'ORD-20250602-2EC64FC3', 'pending', 79.98, 5.99, 92.37, '2025-06-02 07:50:13', 46.18, 'payment_1748850613_683d57b5b4324.png', 'sdfsdf', 'fsdfsdf', 'sdfsdfsdf', 'fsdfsdf', 'fddfsf', 'unpaid'),
+(87, 6, 'ORD-20250602-4C18BD35', 'pending', 0.00, 5.99, 5.99, '2025-06-03 02:34:39', 3.00, 'payment_1748850627_683d57c3cd8dc.png', 'sdfsdf', 'fsdfsdf', 'sdfsdfsdf', 'fsdfsdf', 'fddfsf', 'pending'),
+(88, 6, 'ORD-20250602-1D2DD50D', 'pending', 0.00, 5.99, 5.99, '2025-06-02 07:50:31', 3.00, 'payment_1748850631_683d57c76abd0.png', 'sdfsdf', 'fsdfsdf', 'sdfsdfsdf', 'fsdfsdf', 'fddfsf', 'unpaid'),
+(89, 6, 'ORD-20250602-CAED8DCC', 'pending', 49.99, 5.99, 59.98, '2025-06-03 02:34:56', 29.99, 'payment_1748850670_683d57ee8a37c.png', 'asdsadadassa', 'asdasdasdasd', 'adasddsad', 'asdassad', 'asdasdasd', 'pending'),
+(90, 2, 'ORD-20250602-1C822F2D', 'pending', 59.99, 5.99, 70.78, '2025-06-02 08:20:07', 35.39, 'payment_1748852407_683d5eb76931e.png', '123789', 'Benjo Estrella', 'BDO', '1234567', 'altura', 'unpaid'),
+(91, 2, 'ORD-20250602-FB49961C', 'pending', 29.99, 5.99, 38.38, '2025-06-02 08:30:40', 19.19, 'payment_1748853040_683d613044c3b.png', '123789', 'Benjo Estrella', 'BDO', '1234567', 'altura', 'unpaid'),
+(92, 2, 'ORD-20250603-E78B25CF', 'pending', 109.98, 5.99, 124.77, '2025-06-03 01:40:58', 62.38, 'payment_1748914858_683e52aad6c07.png', 'asdas', 'dasdas', 'sdasd', 'dasdasd', 'dsadas', 'unpaid'),
+(93, 2, 'ORD-20250603-F204BB0B', 'cancelled', 29.99, 5.99, 38.38, '2025-06-03 02:14:14', 19.19, 'payment_1748915975_683e57077d196.png', 'dasd', 'asda', 'dasd', 'dsada', 'dasd', 'unpaid'),
+(94, 2, 'ORD-20250603-4C451DC1', 'pending', 29.99, 5.99, 38.38, '2025-06-03 02:02:15', 19.19, 'payment_1748916135_683e57a7ddfe8.png', 'dasda', 'dasd', 'dasda', 'adsddasda', 'dasd', 'unpaid'),
+(95, 2, 'ORD-20250603-815ED6BA', 'pending', 20000.00, 5.99, 21605.99, '2025-06-03 02:08:03', 10803.00, 'payment_1748916483_683e5903b2554.png', '123789', 'Benjo Estrella', 'sdasd', '1234567', 'altura', 'unpaid');
 
 -- --------------------------------------------------------
 
@@ -141,7 +146,12 @@ INSERT INTO `order_items` (`id`, `order_id`, `product_id`, `quantity`, `unit_pri
 (2, 86, 2, 1, 19.99, 19.99, NULL, NULL, NULL),
 (3, 89, 5, 1, 49.99, 49.99, NULL, NULL, NULL),
 (4, 90, 4, 1, 59.99, 59.99, NULL, NULL, NULL),
-(5, 91, 8, 1, 29.99, 29.99, NULL, NULL, NULL);
+(5, 91, 8, 1, 29.99, 29.99, NULL, NULL, NULL),
+(6, 92, 5, 1, 49.99, 49.99, NULL, NULL, NULL),
+(7, 92, 4, 1, 59.99, 59.99, NULL, NULL, NULL),
+(8, 93, 8, 1, 29.99, 29.99, NULL, NULL, NULL),
+(9, 94, 8, 1, 29.99, 29.99, NULL, NULL, NULL),
+(10, 95, 9, 1, 20000.00, 20000.00, NULL, NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -341,13 +351,13 @@ ALTER TABLE `faqs`
 -- AUTO_INCREMENT for table `orders`
 --
 ALTER TABLE `orders`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=92;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=96;
 
 --
 -- AUTO_INCREMENT for table `order_items`
 --
 ALTER TABLE `order_items`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
 
 --
 -- AUTO_INCREMENT for table `products`
