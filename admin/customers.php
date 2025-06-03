@@ -1,9 +1,11 @@
 <?php
-require_once '../includes/functions.php';
+
 // Check if user is logged in and is an admin
 require_once '../config/database.php';
 
-session_start(); // Make sure session is started
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 
 $current_user = null;
 if (isset($_SESSION['user_id'])) {
