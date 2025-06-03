@@ -132,7 +132,7 @@ if (empty($products)) {
                     <div class="product-card" onclick="openProductModal(<?php echo $product['id']; ?>)">
                         <div class="product-image">
                             <?php if (!empty($product['image_url'])): ?>
-                                <img src="<?php echo htmlspecialchars($product['image_url']); ?>" alt="<?php echo htmlspecialchars($product['name']); ?>">
+                                <img src="../uploads/products/<?php echo htmlspecialchars($product['image_url']); ?>" alt="<?php echo htmlspecialchars($product['name']); ?>">
                             <?php else: ?>
                                 <i class="fas fa-image"></i>
                             <?php endif; ?>

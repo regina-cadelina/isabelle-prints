@@ -32,7 +32,7 @@
             </ul>
         </div>
         
-        <form id="addToCartForm" class="product-form">
+        <form id="addToCartForm" class="product-form" enctype="multipart/form-data">
             <input type="hidden" name="product_id" value="<?php echo $product['id']; ?>">
             
             <div class="form-group">
@@ -116,3 +116,28 @@ function uploadCustomFile() {
     alert('File ready to upload! (Implement AJAX upload as needed)');
 }
 </script>
+
+<?php
+// Handle the form submission for adding to cart
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['product_id'])) {
+    $productId = $_POST['product_id'];
+    $size = $_POST['size'];
+    $color = $_POST['color'];
+    $quantity = $_POST['quantity'];
+    $notes = $_POST['notes'];
+    $imageFileName = null;
+
+    // Handle file upload if a custom file is provided
+    if (isset($_FILES['custom_file']) && $_FILES['custom_file']['error'] === UPLOAD_ERR_OK) {
+        $uploadDir = __DIR__ . '/../uploads/products/';
+        $imageFileName = uniqid('product_', true) . '.' . pathinfo($_FILES['custom_file']['name'], PATHINFO_EXTENSION);
+        move_uploaded_file($_FILES['custom_file']['tmp_name'], $uploadDir . $imageFileName);
+    }
+
+    // Add the product to the cart (implement your cart logic here)
+    // Example: Cart::add($productId, $size, $color, $quantity, $notes, $imageFileName);
+
+    // For demo, just show an alert
+    echo '<script>alert("Product added to cart! (ID: ' . $productId . ', Size: ' . $size . ', Color: ' . $color . ', Quantity: ' . $quantity . ', Notes: ' . $notes . ', Image: ' . $imageFileName . ')");</script>';
+}
+?>
