@@ -115,7 +115,7 @@ $page_title = "Manage Products";
             </div>
             <div class="admin-user">
                 <span>&nbsp Welcome, <?php echo htmlspecialchars($current_user['first_name']); ?></span>
-                <a href="../pages/logout.php" class="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</a>
+                <a href="../pages/logout.php" class="logout-btn" style="float: right;"><i class="fas fa-sign-out-alt"></i> Logout</a>
             </div>
         </div>
     </header>
