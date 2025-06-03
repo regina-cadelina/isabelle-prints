@@ -1,12 +1,37 @@
-
 <?php
 require_once '../includes/functions.php';
 // Check if user is logged in and is an admin
 require_once '../config/database.php';
 
+session_start(); // Make sure session is started
+
+$current_user = null;
+if (isset($_SESSION['user_id'])) {
+    $stmt = $pdo->prepare("SELECT * FROM users WHERE id = ?");
+    $stmt->execute([$_SESSION['user_id']]);
+    $current_user = $stmt->fetch();
+}
+
 // Fetch all customers
 $stmt = $pdo->query("SELECT * FROM users ORDER BY id DESC");
 $customers = $stmt->fetchAll();
+
+// Handle enable/disable/delete actions
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['customer_action'], $_POST['customer_id'])) {
+    $customer_id = (int)$_POST['customer_id'];
+    if ($_POST['customer_action'] === 'toggle_active') {
+        // Toggle is_active
+        $stmt = $pdo->prepare("UPDATE users SET is_active = NOT is_active WHERE id = ?");
+        $stmt->execute([$customer_id]);
+    } elseif ($_POST['customer_action'] === 'delete') {
+        // Delete user
+        $stmt = $pdo->prepare("DELETE FROM users WHERE id = ?");
+        $stmt->execute([$customer_id]);
+    }
+    // Refresh to avoid resubmission
+    header("Location: customers.php");
+    exit;
+}
 
 $page_title = "Customers";
 ?>
@@ -27,7 +52,7 @@ $page_title = "Customers";
                 <h2><i class="fas fa-cog"></i> Admin Panel</h2>
             </div>
             <div class="admin-user">
-                <span>&nbsp Welcome, <?php echo htmlspecialchars($current_user['first_name']); ?></span>
+                <span>&nbsp Welcome, <?php echo htmlspecialchars($current_user['first_name'] ?? 'Admin'); ?></span>
                 <a href="../pages/logout.php" class="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</a>
             </div>
         </div>
@@ -55,25 +80,40 @@ $page_title = "Customers";
                 <div class="admin-form" style="margin-top: 30px;">
                     <table class="admin-table">
                         <thead>
-                            <tr>
-                                <th>ID</th>
-                                <th>Name</th>
-                                <th>Email</th>
-                                <th>Registered</th>
-                            </tr>
-                        </thead>
+    <tr>
+        <th>ID</th>
+        <th>Name</th>
+        <th>Email</th>
+        <th>Registered</th>
+        <th>Actions</th>
+    </tr>
+</thead>
                         <tbody>
                             <?php if (empty($customers)): ?>
                                 <tr>
-                                    <td colspan="4">No customers found.</td>
+                                    <td colspan="5">No customers found.</td>
                                 </tr>
                             <?php else: ?>
                                 <?php foreach ($customers as $customer): ?>
                                     <tr>
                                         <td><?php echo $customer['id']; ?></td>
-                                        <td><?php echo htmlspecialchars($customer['name'] ?? ''); ?></td>
+                                        <td><?php echo htmlspecialchars(($customer['first_name'] ?? '') . ' ' . ($customer['last_name'] ?? '')); ?></td>
                                         <td><?php echo htmlspecialchars($customer['email'] ?? ''); ?></td>
                                         <td><?php echo htmlspecialchars($customer['created_at'] ?? ''); ?></td>
+                                        <td>
+                                            <form method="POST" style="display:inline;">
+                                                <input type="hidden" name="customer_id" value="<?php echo $customer['id']; ?>">
+                                                <button type="submit" name="customer_action" value="toggle_active" class="btn-action">
+                                                    <?php echo ($customer['is_active'] ?? 0) ? 'Disable' : 'Enable'; ?>
+                                                </button>
+                                            </form>
+                                            <form method="POST" style="display:inline;" onsubmit="return confirm('Are you sure you want to delete this account? This action cannot be undone.');">
+                                                <input type="hidden" name="customer_id" value="<?php echo $customer['id']; ?>">
+                                                <button type="submit" name="customer_action" value="delete" class="btn-action btn-danger">
+                                                    Delete
+                                                </button>
+                                            </form>
+                                        </td>
                                     </tr>
                                 <?php endforeach; ?>
                             <?php endif; ?>

@@ -1,7 +1,15 @@
 <?php
 require_once '../includes/functions.php';
-// Check if user is logged in and is an admin
 require_once '../config/database.php';
+
+session_start(); // Make sure session is started
+
+$current_user = null;
+if (isset($_SESSION['user_id'])) {
+    $stmt = $pdo->prepare("SELECT * FROM users WHERE id = ?");
+    $stmt->execute([$_SESSION['user_id']]);
+    $current_user = $stmt->fetch();
+}
 
 // Get total orders and total sales
 $stmt = $pdo->query("SELECT COUNT(*) AS total_orders, SUM(total_amount) AS total_sales FROM orders");
@@ -29,7 +37,7 @@ $page_title = "Sales Report";
                 <h2><i class="fas fa-cog"></i> Admin Panel</h2>
             </div>
             <div class="admin-user">
-                <span>&nbsp Welcome, <?php echo htmlspecialchars($current_user['first_name']); ?></span>
+                <span>&nbsp Welcome, <?php echo htmlspecialchars($current_user['first_name'] ?? 'Admin'); ?></span>
                 <a href="../logout.php" class="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</a>
             </div>
         </div>
