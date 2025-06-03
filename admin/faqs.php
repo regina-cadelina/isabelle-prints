@@ -38,8 +38,9 @@ $page_title = "Manage FAQs";
 <head>
     <meta charset="UTF-8">
     <title><?php echo $page_title; ?></title>
-    <link rel="stylesheet" href="../assets//css/style.css">
-    <link rel="stylesheet" href="../assets//css/admin.css">
+    <link rel="stylesheet" href="../assets/css/style.css">
+    <link rel="stylesheet" href="../assets/css/admin.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
 <body class="admin-body">
     <!-- Admin Header -->
@@ -55,6 +56,21 @@ $page_title = "Manage FAQs";
         </div>
     </header>
     <div class="admin-container">
+        <!-- Sidebar -->
+        <aside class="admin-sidebar">
+            <nav class="admin-menu">
+                <ul>
+                    <li><a href="dashboard.php" class="active"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+                    <li><a href="products.php"><i class="fas fa-box"></i> Manage Products</a></li>
+                    <li><a href="orders.php"><i class="fas fa-shopping-cart"></i> Manage Orders</a></li>
+                    <li><a href="customers.php"><i class="fas fa-users"></i> Customers</a></li>
+                    <li><a href="reports.php"><i class="fas fa-chart-bar"></i> Reports</a></li>
+                    <li><a href="faqs.php"><i class="fas fa-question-circle"></i> Manage FAQs</a></li>
+                    <li><a href="../index.php"><i class="fas fa-globe"></i> View Website</a></li>
+                </ul>
+            </nav>
+        </aside>
+
         <main class="admin-main">
             <div class="admin-content">
                 <h1>FAQs</h1>
