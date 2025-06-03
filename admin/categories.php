@@ -13,15 +13,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['action'])) {
         if ($_POST['action'] === 'add' && !empty($_POST['category_name'])) {
             $icon = trim($_POST['icon'] ?? '');
-            $stmt = $pdo->prepare("INSERT INTO categories (name, icon) VALUES (?, ?)");
-            $stmt->execute([trim($_POST['category_name']), $icon]);
+            $name = trim($_POST['category_name']);
+            $slug = strtolower(preg_replace('/[^a-z0-9]+/i', '-', $name));
+            // Ensure slug is unique
+            $check = $pdo->prepare("SELECT COUNT(*) FROM categories WHERE slug = ?");
+            $baseSlug = $slug;
+            $i = 1;
+            while (true) {
+                $check->execute([$slug]);
+                if ($check->fetchColumn() == 0) break;
+                $slug = $baseSlug . '-' . $i++;
+            }
+            $stmt = $pdo->prepare("INSERT INTO categories (name, icon, slug) VALUES (?, ?, ?)");
+            $stmt->execute([$name, $icon, $slug]);
             header("Location: categories.php");
             exit;
         }
         if ($_POST['action'] === 'edit' && !empty($_POST['category_id']) && !empty($_POST['category_name'])) {
             $icon = trim($_POST['icon'] ?? '');
-            $stmt = $pdo->prepare("UPDATE categories SET name = ?, icon = ? WHERE id = ?");
-            $stmt->execute([trim($_POST['category_name']), $icon, $_POST['category_id']]);
+            $name = trim($_POST['category_name']);
+            $slug = strtolower(preg_replace('/[^a-z0-9]+/i', '-', $name));
+            // Ensure slug is unique except for this category
+            $check = $pdo->prepare("SELECT COUNT(*) FROM categories WHERE slug = ? AND id != ?");
+            $baseSlug = $slug;
+            $i = 1;
+            while (true) {
+                $check->execute([$slug, $_POST['category_id']]);
+                if ($check->fetchColumn() == 0) break;
+                $slug = $baseSlug . '-' . $i++;
+            }
+            $stmt = $pdo->prepare("UPDATE categories SET name = ?, icon = ?, slug = ? WHERE id = ?");
+            $stmt->execute([$name, $icon, $slug, $_POST['category_id']]);
         }
         if ($_POST['action'] === 'delete' && !empty($_POST['category_id'])) {
             $stmt = $pdo->prepare("DELETE FROM categories WHERE id = ?");
@@ -32,8 +54,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// Fetch all categories
-$stmt = $pdo->query("SELECT * FROM categories ORDER BY id ASC");
+// Pagination setup
+$perPage = 10;
+$page = isset($_GET['page']) && is_numeric($_GET['page']) ? (int)$_GET['page'] : 1;
+if ($page < 1) $page = 1;
+$offset = ($page - 1) * $perPage;
+
+// Get total count
+$totalStmt = $pdo->query("SELECT COUNT(*) FROM categories");
+$totalCategories = $totalStmt->fetchColumn();
+$totalPages = ceil($totalCategories / $perPage);
+
+// Fetch paginated categories
+$stmt = $pdo->prepare("SELECT * FROM categories ORDER BY id ASC LIMIT :limit OFFSET :offset");
+$stmt->bindValue(':limit', $perPage, PDO::PARAM_INT);
+$stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+$stmt->execute();
 $categories = $stmt->fetchAll();
 
 $page_title = "Manage Categories";
@@ -138,7 +174,20 @@ $page_title = "Manage Categories";
                                 <?php endforeach; ?>
                             </tbody>
                         </table>
+                        <!-- Pagination Controls -->
+                        <div style="margin-top:15px; text-align:center;">
+                            <?php if ($page > 1): ?>
+                                <a href="?page=<?php echo $page - 1; ?>" class="btn-small" style="margin-right:10px;">&larr; Prev</a>
+                            <?php endif; ?>
+                            <span>Page <?php echo $page; ?> of <?php echo $totalPages; ?></span>
+                            <?php if ($page < $totalPages): ?>
+                                <a href="?page=<?php echo $page + 1; ?>" class="btn-small" style="margin-left:10px;">Next &rarr;</a>
+                            <?php endif; ?>
+                        </div>
                     </div>
                 </div>
+            </div>
+        </main>
+    </div>
 </body>
 </html>

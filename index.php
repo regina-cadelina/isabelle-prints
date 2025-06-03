@@ -37,7 +37,11 @@ require_once 'config/database.php';
                             <div class="category-card">
                                 <a href="/isabelle-prints/pages/products.php?category=<?php echo $category['id']; ?>">
                                     <div class="category-image">
-                                        <i class="fas fa-<?php echo $category['icon'] ?? 'image'; ?>"></i>
+                                        <?php if (!empty($category['image_url'])): ?>
+                                            <img src="/isabelle-prints/uploads/categories/<?php echo htmlspecialchars($category['image_url']); ?>" alt="<?php echo htmlspecialchars($category['name']); ?>" style="width:60px;height:60px;object-fit:cover;">
+                                        <?php else: ?>
+                                            <i class="fas fa-<?php echo $category['icon'] ?? 'image'; ?>"></i>
+                                        <?php endif; ?>
                                     </div>
                                     <h3><?php echo htmlspecialchars($category['name']); ?></h3>
                                 </a>
@@ -124,10 +128,11 @@ require_once 'config/database.php';
         modalContent.innerHTML = `
             <div class="product-modal-content">
                 <div class="product-modal-image">
-                    ${product.image_url ? 
-                        `<img src="${product.image_url}" alt="${product.name}">` : 
-                        '<div class="placeholder-image"><i class="fas fa-image"></i></div>'
-                    }
+                    <?php if (!empty($product['image_url'])): ?>
+                        <img src="/isabelle-prints/uploads/products/<?php echo htmlspecialchars($product['image_url']); ?>" alt="<?php echo htmlspecialchars($product['name']); ?>">
+                    <?php else: ?>
+                        <i class="fas fa-image"></i>
+                    <?php endif; ?>
                 </div>
                 <div class="product-modal-details">
                     <h2>${product.name}</h2>
@@ -252,7 +257,7 @@ require_once 'config/database.php';
     function updateCartCount() {
         fetch('/isabelle-prints/api/get-cart-count.php')
             .then(response => response.json())
-            .then(data => {
+            .then (data => {
                 const cartCountElement = document.querySelector('.cart-count');
                 if (data.count > 0) {
                     if (cartCountElement) {
