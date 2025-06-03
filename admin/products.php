@@ -93,19 +93,40 @@ if ($search !== '') {
     $params[':search'] = "%$search%";
 }
 
-// Get products with search
-$stmt = $pdo->prepare("
+// Pagination setup
+$perPage = 5;
+$page = isset($_GET['page']) && is_numeric($_GET['page']) ? (int)$_GET['page'] : 1;
+if ($page < 1) $page = 1;
+$offset = ($page - 1) * $perPage;
+
+// Count total products for pagination (with search)
+$count_sql = "
+    SELECT COUNT(*) FROM products p
+    LEFT JOIN categories c ON p.category_id = c.id
+    WHERE p.is_active = 1 " . ($search ? "AND (p.product_name LIKE :search OR p.sku LIKE :search OR c.name LIKE :search)" : "");
+$count_stmt = $pdo->prepare($count_sql);
+if ($search) {
+    $count_stmt->execute([':search' => "%$search%"]);
+} else {
+    $count_stmt->execute();
+}
+$totalProducts = $count_stmt->fetchColumn();
+$totalPages = ceil($totalProducts / $perPage);
+
+// Get products with search and pagination
+$product_sql = "
     SELECT p.*, c.name AS category_name 
     FROM products p 
     LEFT JOIN categories c ON p.category_id = c.id 
     WHERE p.is_active = 1 $search_sql
     ORDER BY p.created_at DESC
-");
-if ($params) {
-    $stmt->execute($params);
-} else {
-    $stmt->execute();
+    LIMIT $perPage OFFSET $offset
+";
+$stmt = $pdo->prepare($product_sql);
+if ($search) {
+    $stmt->bindValue(':search', "%$search%", PDO::PARAM_STR);
 }
+$stmt->execute($params);
 $products = $stmt->fetchAll();
 
 // Get categories for dropdown
@@ -333,6 +354,16 @@ $page_title = "Manage Products";
                                 <?php endif; ?>
                             </tbody>
                         </table>
+                        <!-- Pagination Controls -->
+                        <div style="margin-top:15px; text-align:center;">
+                            <?php if ($page > 1): ?>
+                                <a href="?<?php echo http_build_query(array_merge($_GET, ['page' => $page - 1])); ?>" class="btn-small" style="margin-right:10px;">&larr; Prev</a>
+                            <?php endif; ?>
+                            <span>Page <?php echo $page; ?> of <?php echo $totalPages; ?></span>
+                            <?php if ($page < $totalPages): ?>
+                                <a href="?<?php echo http_build_query(array_merge($_GET, ['page' => $page + 1])); ?>" class="btn-small" style="margin-left:10px;">Next &rarr;</a>
+                            <?php endif; ?>
+                        </div>
                     </div>
                 </div>
 
