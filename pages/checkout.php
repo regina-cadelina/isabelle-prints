@@ -1,30 +1,39 @@
 <?php
 session_start();
 
-// Check if user is logged in
 if (!isset($_SESSION['user_id'])) {
     header('Location: login.php');
     exit();
 }
 
-require_once '../config/database.php'; // Use your actual DB config file
-require_once '../includes/functions.php'; // Use your actual functions file
+require_once '../config/database.php';
+require_once '../includes/functions.php';
 
-// Fetch cart items
 $cartItems = getCartItems($pdo);
+$cartTotals = calculateCartTotal($pdo);
 
-// Calculate cart totals (make sure this function exists and works)
-$cartTotals = calculateCartTotal($pdo); // Not calculateCartTotals
+function generateOrderNumber($pdo) {
+    $prefix = 'ORD-' . date('Ymd') . '-';
+    do {
+        $randomPart = strtoupper(bin2hex(random_bytes(4)));
+        $orderNumber = $prefix . $randomPart;
 
-// Handle form submission
+        $stmt = $pdo->prepare("SELECT COUNT(*) FROM orders WHERE order_number = ?");
+        $stmt->execute([$orderNumber]);
+        $exists = $stmt->fetchColumn() > 0;
+    } while ($exists);
+
+    return $orderNumber;
+}
+
 $error = null;
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // Validate form data
-    $shippingAddress = isset($_POST['shipping_address']) ? trim($_POST['shipping_address']) : '';
-    $billingAddress = isset($_POST['billing_address']) ? trim($_POST['billing_address']) : '';
-    $referenceNumber = isset($_POST['reference_number']) ? trim($_POST['reference_number']) : '';
-    $bankOwnerName = isset($_POST['bank_owner_name']) ? trim($_POST['bank_owner_name']) : '';
-    $bankName = isset($_POST['bank_name']) ? trim($_POST['bank_name']) : '';
+    $shippingAddress = trim($_POST['shipping_address'] ?? '');
+    $billingAddress = trim($_POST['billing_address'] ?? '');
+    $referenceNumber = trim($_POST['reference_number'] ?? '');
+    $bankOwnerName = trim($_POST['bank_owner_name'] ?? '');
+    $bankName = trim($_POST['bank_name'] ?? '');
 
     if (empty($shippingAddress)) {
         $error = 'Shipping address is required.';
@@ -38,13 +47,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error = 'Bank name is required.';
     }
 
+    $paymentProofFile = null;
+
     if (!$error) {
-        // Handle file upload
-        $paymentProofFile = null;
         if (isset($_FILES['payment_proof']) && $_FILES['payment_proof']['error'] === UPLOAD_ERR_OK) {
             $uploadDir = '../uploads/payment-proofs/';
-
-            // Create directory if it doesn't exist
             if (!is_dir($uploadDir)) {
                 mkdir($uploadDir, 0755, true);
             }
@@ -62,169 +69,177 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $error = 'Failed to upload payment proof file.';
                 }
             } else {
-                $error = 'Invalid file type. Please upload JPG, PNG, or PDF files only.';
+                $error = 'Invalid file type. Only JPG, PNG, and PDF allowed.';
             }
         } else {
             $error = 'Please upload your payment proof.';
         }
+    }
 
-        if (!$error) {
-            try {
-                // Insert order into database
-                $stmt = $pdo->prepare("
-                    INSERT INTO orders (user_id, total_amount, downpayment_amount, payment_status, 
-                                       shipping_address, billing_address, payment_proof_file, 
-                                       reference_number, bank_owner_name, bank_name, created_at) 
-                    VALUES (?, ?, ?, 'pending', ?, ?, ?, ?, ?, ?, NOW())
-                ");
+    if (!$error) {
+        try {
+            $pdo->beginTransaction();
 
+            $orderNumber = generateOrderNumber($pdo);
+            $subtotal = $cartTotals['subtotal'] ?? $cartTotals['total']; // Default to total if subtotal not calculated
+            $shippingCost = $cartTotals['shipping'] ?? 0;
+            $totalAmount = $cartTotals['total'];
+            $downpaymentAmount = $totalAmount * 0.5;
+
+            $stmt = $pdo->prepare("
+                INSERT INTO orders (
+                    user_id, order_number, status,
+                    subtotal, shipping_cost, total_amount,
+                    downpayment_amount, payment_proof_file,
+                    reference_number, bank_owner_name, bank_name,
+                    shipping_address, billing_address, created_at
+                ) VALUES (?, ?, 'pending', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
+            ");
+
+            $stmt->execute([
+                $_SESSION['user_id'],
+                $orderNumber,
+                $subtotal,
+                $shippingCost,
+                $totalAmount,
+                $downpaymentAmount,
+                $paymentProofFile,
+                $referenceNumber,
+                $bankOwnerName,
+                $bankName,
+                $shippingAddress,
+                $billingAddress
+            ]);
+
+            $orderId = $pdo->lastInsertId();
+
+            $stmt = $pdo->prepare("
+                INSERT INTO order_items (
+                    order_id, product_id, quantity,
+                    unit_price, total_price, selected_options,
+                    customization_notes, file_upload
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            ");
+
+            foreach ($cartItems as $item) {
+                $unitPrice = $item['product']['base_price'];
+                $quantity = $item['quantity'];
+                $totalPrice = $unitPrice * $quantity;
                 $stmt->execute([
-                    $_SESSION['user_id'],
-                    $cartTotals['total'],
-                    $cartTotals['total'] * 0.5,
-                    $shippingAddress,
-                    $billingAddress,
-                    $paymentProofFile,
-                    $referenceNumber,
-                    $bankOwnerName,
-                    $bankName
+                    $orderId,
+                    $item['product']['id'],
+                    $quantity,
+                    $unitPrice,
+                    $totalPrice,
+                    $item['selected_options'] ?? null,
+                    $item['customization_notes'] ?? null,
+                    $item['file_upload'] ?? null
                 ]);
-
-                $orderId = $pdo->lastInsertId();
-
-                // Insert order items
-                $stmt = $pdo->prepare("
-                    INSERT INTO order_items (order_id, product_id, quantity, price)
-                    VALUES (?, ?, ?, ?)
-                ");
-
-                foreach ($cartItems as $item) {
-                    $stmt->execute([
-                        $orderId,
-                        $item['product']['id'],
-                        $item['quantity'],
-                        $item['product']['base_price']
-                    ]);
-                }
-
-                // Clear cart (if you have a clearCart function, otherwise use unset)
-                if (function_exists('clearCart')) {
-                    clearCart($pdo, $_SESSION['user_id']);
-                } else {
-                    unset($_SESSION['cart']);
-                }
-
-                // Redirect to order confirmation page
-                header('Location: order_confirmation.php?order_id=' . $orderId);
-                exit();
-            } catch (PDOException $e) {
-                $error = 'An error occurred while processing your order. Please try again.';
-                error_log("PDO Error: " . $e->getMessage());
             }
+
+            if (function_exists('clearCart')) {
+                clearCart($pdo, $_SESSION['user_id']);
+            } else {
+                unset($_SESSION['cart']);
+            }
+
+            $pdo->commit();
+            header('Location: order_confirmation.php?order_id=' . $orderId);
+            exit();
+        } catch (PDOException $e) {
+            $pdo->rollBack();
+            $error = 'An error occurred while processing your order.';
+            error_log("Checkout Error: " . $e->getMessage());
+            echo "PDO Error: " . $e->getMessage();
         }
     }
 }
 ?>
 
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Checkout - Gadget Zone</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" integrity="sha512-9usAa10IRO0HhonpyAIVpjrylPvoDwiPUiKdWk5t3PyolY1cOd4DSE0Ga+ri4AuTroPR5aQvXU9xC6qOPnzFeg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
     <link rel="stylesheet" href="../css/style.css">
 </head>
 <body>
-    <?php include('../includes/header.php'); ?>
 
-    <div class="container mt-5">
-        <h1>Checkout</h1>
+<?php include('../includes/header.php'); ?>
 
-        <?php if ($error): ?>
-            <div class="alert alert-danger"><?= $error ?></div>
-        <?php endif; ?>
+<div class="container mt-5">
+    <h1>Checkout</h1>
 
-        <?php if (empty($cartItems)): ?>
-            <p>Your cart is empty. <a href="products.php">Continue shopping</a>.</p>
-        <?php else: ?>
-            <div class="row">
-                <div class="col-md-4 order-md-2 mb-4">
-                    <h4 class="d-flex justify-content-between align-items-center mb-3">
-                        <span class="text-muted">Your cart</span>
-                        <span class="badge badge-secondary badge-pill"><?= count($cartItems) ?></span>
-                    </h4>
-                    <ul class="list-group mb-3">
-                        
-                        <li class="list-group-item d-flex justify-content-between">
-                            <span>Total (PHP)</span>
-                            <strong>₱<?= number_format($cartTotals['total'], 2) ?></strong>
-                        </li>
-                        <li class="list-group-item d-flex justify-content-between">
-                            <span>Downpayment (50%)</span>
-                            <strong>₱<?= number_format($cartTotals['total'] * 0.5, 2) ?></strong>
-                        </li>
-                    </ul>
-                </div>
-                <div class="col-md-8 order-md-1">
-                    <h4 class="mb-3">Billing Information</h4>
-                    <form method="POST" enctype="multipart/form-data">
-                        <div class="mb-3">
-                            <label for="shipping_address">Shipping Address</label>
-                            <input type="text" class="form-control" id="shipping_address" name="shipping_address" value="<?= isset($_POST['shipping_address']) ? htmlspecialchars($_POST['shipping_address']) : '' ?>" required>
-                        </div>
+    <?php if ($error): ?>
+        <div class="alert alert-danger"><?= htmlspecialchars($error) ?></div>
+    <?php endif; ?>
 
-                        <div class="mb-3">
-                            <label for="billing_address">Billing Address</label>
-                            <input type="text" class="form-control" id="billing_address" name="billing_address" value="<?= isset($_POST['billing_address']) ? htmlspecialchars($_POST['billing_address']) : '' ?>" required>
-                        </div>
-
-                        <hr class="mb-4">
-
-                        <h4 class="mb-3">Payment Information</h4>
-
-                        <div class="mb-3">
-                            <label for="payment_proof">Payment Proof (JPG, PNG, or PDF)</label>
-                            <input type="file" class="form-control" id="payment_proof" name="payment_proof" accept=".jpg, .jpeg, .png, .pdf" required>
-                        </div>
-
-                        <div class="mb-3">
-                            <label for="reference_number">Reference Number</label>
-                            <input type="text" class="form-control" id="reference_number" name="reference_number" value="<?= isset($_POST['reference_number']) ? htmlspecialchars($_POST['reference_number']) : '' ?>" required>
-                        </div>
-
-                        <div class="mb-3">
-                            <label for="bank_owner_name">Bank Owner Name</label>
-                            <input type="text" class="form-control" id="bank_owner_name" name="bank_owner_name" value="<?= isset($_POST['bank_owner_name']) ? htmlspecialchars($_POST['bank_owner_name']) : '' ?>" required>
-                        </div>
-
-                        <div class="mb-3">
-                            <label for="bank_name">Bank Name</label>
-                            <input type="text" class="form-control" id="bank_name" name="bank_name" value="<?= isset($_POST['bank_name']) ? htmlspecialchars($_POST['bank_name']) : '' ?>" required>
-                        </div>
-
-                        <hr class="mb-4">
-                        <button class="btn btn-primary btn-lg btn-block" type="submit">Place Order</button>
-                    </form>
-                </div>
+    <?php if (empty($cartItems)): ?>
+        <p>Your cart is empty. <a href="products.php">Continue shopping</a>.</p>
+    <?php else: ?>
+        <div class="row">
+            <div class="col-md-4 order-md-2 mb-4">
+                <h4 class="d-flex justify-content-between align-items-center mb-3">
+                    <span class="text-muted">Your cart</span>
+                    <span class="badge badge-secondary badge-pill"><?= count($cartItems) ?></span>
+                </h4>
+                <ul class="list-group mb-3">
+                    <li class="list-group-item d-flex justify-content-between">
+                        <span>Total (PHP)</span>
+                        <strong>₱<?= number_format($cartTotals['total'], 2) ?></strong>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between">
+                        <span>Downpayment (50%)</span>
+                        <strong>₱<?= number_format($cartTotals['total'] * 0.5, 2) ?></strong>
+                    </li>
+                </ul>
             </div>
-        <?php endif; ?>
-    </div>
+            <div class="col-md-8 order-md-1">
+                <h4 class="mb-3">Billing Information</h4>
+                <form method="POST" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label for="shipping_address">Shipping Address</label>
+                        <input type="text" class="form-control" id="shipping_address" name="shipping_address" required value="<?= htmlspecialchars($_POST['shipping_address'] ?? '') ?>">
+                    </div>
+                    <div class="mb-3">
+                        <label for="billing_address">Billing Address</label>
+                        <input type="text" class="form-control" id="billing_address" name="billing_address" required value="<?= htmlspecialchars($_POST['billing_address'] ?? '') ?>">
+                    </div>
 
-    <?php include('../includes/footer.php'); ?>
-    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.3/dist/umd/popper.min.js"></script>
-    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
-    <script>
-function changeQuantity(btn, delta) {
-    var form = btn.closest('form');
-    var input = form.querySelector('input[name="quantity"]');
-    var newValue = parseInt(input.value) + delta;
-    if (newValue < 1) newValue = 1;
-    input.value = newValue;
-    form.querySelector('button[type="submit"]').click();
-}
-</script>
+                    <h4 class="mb-3">Payment Information</h4>
+
+                    <div class="mb-3">
+                        <label for="payment_proof">Payment Proof (JPG, PNG, PDF)</label>
+                        <input type="file" class="form-control" id="payment_proof" name="payment_proof" accept=".jpg, .jpeg, .png, .pdf" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="reference_number">Reference Number</label>
+                        <input type="text" class="form-control" id="reference_number" name="reference_number" required value="<?= htmlspecialchars($_POST['reference_number'] ?? '') ?>">
+                    </div>
+                    <div class="mb-3">
+                        <label for="bank_owner_name">Bank Owner Name</label>
+                        <input type="text" class="form-control" id="bank_owner_name" name="bank_owner_name" required value="<?= htmlspecialchars($_POST['bank_owner_name'] ?? '') ?>">
+                    </div>
+                    <div class="mb-3">
+                        <label for="bank_name">Bank Name</label>
+                        <input type="text" class="form-control" id="bank_name" name="bank_name" required value="<?= htmlspecialchars($_POST['bank_name'] ?? '') ?>">
+                    </div>
+
+                    <hr class="mb-4">
+                    <button class="btn btn-primary btn-lg btn-block" type="submit">Place Order</button>
+                </form>
+            </div>
+        </div>
+    <?php endif; ?>
+</div>
+
+<?php include('../includes/footer.php'); ?>
+
+<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.3/dist/umd/popper.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
 </body>
 </html>

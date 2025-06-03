@@ -1,7 +1,7 @@
 <div class="product-modal-content">
     <div class="product-modal-image">
         <?php if ($product['image_url']): ?>
-            <img src="<?php echo htmlspecialchars($product['image_url']); ?>" alt="<?php echo htmlspecialchars($product['name']); ?>">
+            <img src="uploads/products/<?php echo htmlspecialchars($product['image_url']); ?>" alt="<?php echo htmlspecialchars($product['name']); ?>">
         <?php else: ?>
             <div class="placeholder-image">
                 <i class="fas fa-image"></i>

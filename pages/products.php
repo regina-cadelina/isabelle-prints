@@ -45,7 +45,7 @@ try {
     $query = "SELECT p.*, c.name as category_name 
               FROM products p 
               LEFT JOIN categories c ON p.category_id = c.id 
-              WHERE 1=1";
+              WHERE p.is_active = 1";
     
     $params = [];
     
@@ -61,25 +61,6 @@ try {
     $products = $stmt->fetchAll();
 } catch (PDOException $e) {
     $products = [];
-}
-
-// If no products from database, use sample data
-if (empty($products)) {
-    $sampleProducts = [
-        ['id' => 1, 'name' => 'Premium Business Cards', 'base_price' => 500, 'category_name' => 'Business Cards', 'image_url' => ''],
-        ['id' => 2, 'name' => 'Custom Poster Print', 'base_price' => 800, 'category_name' => 'Posters', 'image_url' => ''],
-        ['id' => 3, 'name' => 'Magazine Printing', 'base_price' => 1200, 'category_name' => 'Magazines', 'image_url' => ''],
-        ['id' => 4, 'name' => 'Banner Design', 'base_price' => 1500, 'category_name' => 'Banners', 'image_url' => ''],
-        ['id' => 5, 'name' => 'Brochure Printing', 'base_price' => 600, 'category_name' => 'Brochures', 'image_url' => ''],
-        ['id' => 6, 'name' => 'Custom T-Shirt', 'base_price' => 750, 'category_name' => 'Apparel', 'image_url' => ''],
-        ['id' => 7, 'name' => 'Flyer Design', 'base_price' => 400, 'category_name' => 'Flyers', 'image_url' => ''],
-        ['id' => 8, 'name' => 'Book Printing', 'base_price' => 2000, 'category_name' => 'Books', 'image_url' => ''],
-        ['id' => 9, 'name' => 'Sticker Printing', 'base_price' => 300, 'category_name' => 'Stickers', 'image_url' => ''],
-        ['id' => 10, 'name' => 'Calendar Design', 'base_price' => 900, 'category_name' => 'Calendars', 'image_url' => ''],
-        ['id' => 11, 'name' => 'Invitation Cards', 'base_price' => 650, 'category_name' => 'Invitations', 'image_url' => ''],
-        ['id' => 12, 'name' => 'Menu Printing', 'base_price' => 550, 'category_name' => 'Menus', 'image_url' => '']
-    ];
-    $products = $sampleProducts;
 }
 ?>
 
@@ -132,7 +113,7 @@ if (empty($products)) {
                     <div class="product-card" onclick="openProductModal(<?php echo $product['id']; ?>)">
                         <div class="product-image">
                             <?php if (!empty($product['image_url'])): ?>
-                                <img src="<?php echo htmlspecialchars($product['image_url']); ?>" alt="<?php echo htmlspecialchars($product['name']); ?>">
+                                <img src="../uploads/products/<?php echo htmlspecialchars($product['image_url']); ?>" alt="<?php echo htmlspecialchars($product['name']); ?>">
                             <?php else: ?>
                                 <i class="fas fa-image"></i>
                             <?php endif; ?>
@@ -189,19 +170,25 @@ function openProductModal(productId) {
 
 function displayProductModal(product) {
     const modalContent = document.getElementById('modalContent');
-    
+    // Fix: prepend the correct path to the image_url
+    const imagePath = product.image_url 
+        ? `/isabelle-prints/uploads/products/${product.image_url}` 
+        : '';
+
     modalContent.innerHTML = `
         <div class="product-modal-content">
             <div class="product-modal-image">
                 ${product.image_url ? 
-                    `<img src="${product.image_url}" alt="${product.name}">` : 
+                    `<img src="${imagePath}" alt="${product.name}">` : 
                     '<div class="placeholder-image"><i class="fas fa-image"></i></div>'
                 }
             </div>
             <div class="product-modal-details">
                 <h2>${product.name}</h2>
-                <div class="product-category">${product.category_name || 'General'}</div>
-                <div class="product-price">₱${parseFloat(product.base_price).toLocaleString('en-US', {minimumFractionDigits: 2})}</div>
+                <div class="product-stock" style="margin-bottom:10px;">
+                    <strong>Available Stock:</strong>
+                    ${product.stock_quantity !== undefined ? product.stock_quantity : 'N/A'}
+                </div>
                 
                 <div class="product-description">
                     <p>${product.description || 'High-quality printing service with professional results.'}</p>
@@ -213,6 +200,11 @@ function displayProductModal(product) {
                     <li><i class="fas fa-check"></i> Professional design support</li>
                     <li><i class="fas fa-check"></i> Satisfaction guaranteed</li>
                 </ul>
+                
+                <div class="product-stock" style="margin-bottom:10px;">
+                    <strong>Available Stock:</strong>
+                    ${product.stock_quantity !== undefined ? product.stock_quantity : 'N/A'}
+                </div>
                 
                 <form class="product-form" onsubmit="addToCart(event, ${product.id})">
                     <div class="product-options">

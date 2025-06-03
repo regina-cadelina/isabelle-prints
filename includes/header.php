@@ -90,7 +90,6 @@ if (session_status() == PHP_SESSION_NONE) {
                 <a href="/isabelle-prints/index.php" class="nav-link <?php echo basename($_SERVER['PHP_SELF']) == 'index.php' ? 'active' : ''; ?>">HOME</a>
                 <a href="/isabelle-prints/pages/products.php" class="nav-link <?php echo basename($_SERVER['PHP_SELF']) == 'products.php' ? 'active' : ''; ?>">COLLECTION</a>
                 <a href="/isabelle-prints/pages/faqs.php" class="nav-link <?php echo basename($_SERVER['PHP_SELF']) == 'faq.php' ? 'active' : ''; ?>">FAQS</a>
-                <a href="/isabelle-prints/pages/about.php" class="nav-link <?php echo basename($_SERVER['PHP_SELF']) == 'about.php' ? 'active' : ''; ?>">ABOUT US</a>
                 
                 <div class="nav-icons">
                     <?php if (isset($_SESSION['user_id'])): ?>

@@ -1,4 +1,6 @@
 <?php
+require_once '../includes/functions.php';
+require_once '../config/database.php';
 $pageTitle = "My Orders";
 include '../includes/header.php';
 
@@ -9,6 +11,23 @@ if (!isLoggedIn()) {
     exit;
 }
 
+// Handle order cancellation
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['cancel_order_id'])) {
+    $order_id = (int)$_POST['cancel_order_id'];
+    // Only allow cancellation if the order belongs to the user and is pending/processing
+    $stmt = $pdo->prepare("SELECT * FROM orders WHERE id = ? AND user_id = ? AND status IN ('pending', 'processing')");
+    $stmt->execute([$order_id, $_SESSION['user_id']]);
+    $order = $stmt->fetch();
+    if ($order) {
+        $stmt = $pdo->prepare("UPDATE orders SET status = 'cancelled' WHERE id = ?");
+        $stmt->execute([$order_id]);
+        // Optionally: Notify admin via email or log
+        $success = 'Order cancelled successfully.';
+    } else {
+        $success = 'Unable to cancel this order.';
+    }
+}
+
 $success = '';
 if (isset($_GET['success']) && $_GET['success'] === 'order_placed') {
     $success = 'Your order has been placed successfully! We will review your payment and update the status shortly.';
@@ -17,6 +36,7 @@ if (isset($_GET['success']) && $_GET['success'] === 'order_placed') {
 // Get user's orders
 $stmt = $pdo->prepare("
     SELECT o.*, 
+           o.payment_status,  -- Add this line if not already present
            COUNT(oi.id) as item_count,
            GROUP_CONCAT(p.name SEPARATOR ', ') as product_names
     FROM orders o 
@@ -65,6 +85,9 @@ $orders = $stmt->fetchAll();
                                 <span class="status-badge status-<?php echo $order['status']; ?>">
                                     <?php echo ucfirst($order['status']); ?>
                                 </span>
+                                <span class="payment-badge payment-<?php echo $order['payment_status']; ?>" style="margin-left:10px;">
+                                    <?php echo 'Payment: ' . ucfirst($order['payment_status']); ?>
+                                </span>
                             </div>
                         </div>
                         
@@ -94,6 +117,12 @@ $orders = $stmt->fetchAll();
                             <button class="btn btn-secondary" onclick="viewOrderDetails(<?php echo $order['id']; ?>)">
                                 View Details
                             </button>
+                            <?php if ($order['status'] === 'pending' || $order['status'] === 'processing'): ?>
+                                <form method="POST" style="display:inline;" onsubmit="return confirm('Are you sure you want to cancel this order?');">
+                                    <input type="hidden" name="cancel_order_id" value="<?php echo $order['id']; ?>">
+                                    <button type="submit" class="btn btn-danger">Cancel Order</button>
+                                </form>
+                            <?php endif; ?>
                             <?php if ($order['status'] === 'pending'): ?>
                                 <span class="payment-status">Payment under review</span>
                             <?php elseif ($order['status'] === 'processing'): ?>
