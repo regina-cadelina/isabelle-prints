@@ -185,8 +185,10 @@ function displayProductModal(product) {
             </div>
             <div class="product-modal-details">
                 <h2>${product.name}</h2>
-                <div class="product-category">${product.category_name || 'General'}</div>
-                <div class="product-price">₱${parseFloat(product.base_price).toLocaleString('en-US', {minimumFractionDigits: 2})}</div>
+                <div class="product-stock" style="margin-bottom:10px;">
+                    <strong>Available Stock:</strong>
+                    ${product.stock_quantity !== undefined ? product.stock_quantity : 'N/A'}
+                </div>
                 
                 <div class="product-description">
                     <p>${product.description || 'High-quality printing service with professional results.'}</p>
@@ -198,6 +200,11 @@ function displayProductModal(product) {
                     <li><i class="fas fa-check"></i> Professional design support</li>
                     <li><i class="fas fa-check"></i> Satisfaction guaranteed</li>
                 </ul>
+                
+                <div class="product-stock" style="margin-bottom:10px;">
+                    <strong>Available Stock:</strong>
+                    ${product.stock_quantity !== undefined ? product.stock_quantity : 'N/A'}
+                </div>
                 
                 <form class="product-form" onsubmit="addToCart(event, ${product.id})">
                     <div class="product-options">
