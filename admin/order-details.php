@@ -239,7 +239,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['custom_image']) && $
                 
 <!-- Order Details Section -->
 <div class="order-details-section">
-    <h2>Order Details</h2>
+   
     <!-- ...existing order details fields... -->
 
     <!-- Customization Image Section -->
@@ -256,6 +256,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['custom_image']) && $
             <h3>Uploaded Custom Image</h3>
             <p style="color:#888;">No custom image uploaded for this order.</p>
         </div>
+    <?php endif; ?>
+
+    <!-- Customization Notes Section -->
+    <div class="custom-notes-section" style="margin-top:20px;">
+    <h3>Customization Notes</h3>
+    <?php
+    // If you store notes per order (in the orders table)
+    if (!empty($order['customization_notes'])): ?>
+        <div style="background:#f9f9f9; border:1px solid #eee; padding:12px; border-radius:6px;">
+            <?php echo nl2br(htmlspecialchars($order['customization_notes'])); ?>
+        </div>
+    <?php else: ?>
+        <p style="color:#888;">No customization notes for this order.</p>
     <?php endif; ?>
 </div>
                 
