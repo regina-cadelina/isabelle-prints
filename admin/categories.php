@@ -11,6 +11,19 @@ $current_user = getCurrentUser();
 // Handle add, edit, delete actions
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['action'])) {
+        // Handle file upload for add and edit
+        $image_url = '';
+        if (!empty($_FILES['image']['name'])) {
+            $target_dir = "../uploads/categories/";
+            if (!is_dir($target_dir)) mkdir($target_dir, 0777, true);
+            $ext = strtolower(pathinfo($_FILES['image']['name'], PATHINFO_EXTENSION));
+            $filename = uniqid('cat_', true) . '.' . $ext;
+            $target_file = $target_dir . $filename;
+            if (move_uploaded_file($_FILES['image']['tmp_name'], $target_file)) {
+                $image_url = $filename;
+            }
+        }
+
         if ($_POST['action'] === 'add' && !empty($_POST['category_name'])) {
             $icon = trim($_POST['icon'] ?? '');
             $name = trim($_POST['category_name']);
@@ -24,8 +37,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 if ($check->fetchColumn() == 0) break;
                 $slug = $baseSlug . '-' . $i++;
             }
-            $stmt = $pdo->prepare("INSERT INTO categories (name, icon, slug) VALUES (?, ?, ?)");
-            $stmt->execute([$name, $icon, $slug]);
+            $stmt = $pdo->prepare("INSERT INTO categories (name, icon, slug, image_url) VALUES (?, ?, ?, ?)");
+            $stmt->execute([$name, $icon, $slug, $image_url]);
             header("Location: categories.php");
             exit;
         }
@@ -42,8 +55,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 if ($check->fetchColumn() == 0) break;
                 $slug = $baseSlug . '-' . $i++;
             }
-            $stmt = $pdo->prepare("UPDATE categories SET name = ?, icon = ?, slug = ? WHERE id = ?");
-            $stmt->execute([$name, $icon, $slug, $_POST['category_id']]);
+            // If a new image is uploaded, update it, else keep the old one
+            if ($image_url) {
+                $stmt = $pdo->prepare("UPDATE categories SET name = ?, icon = ?, slug = ?, image_url = ? WHERE id = ?");
+                $stmt->execute([$name, $icon, $slug, $image_url, $_POST['category_id']]);
+            } else {
+                $stmt = $pdo->prepare("UPDATE categories SET name = ?, icon = ?, slug = ? WHERE id = ?");
+                $stmt->execute([$name, $icon, $slug, $_POST['category_id']]);
+            }
         }
         if ($_POST['action'] === 'delete' && !empty($_POST['category_id'])) {
             $stmt = $pdo->prepare("DELETE FROM categories WHERE id = ?");
@@ -123,7 +142,7 @@ $page_title = "Manage Categories";
                 <!-- Add Category Form -->
                 <div class="dashboard-section">
                     <h2>Add New Category</h2>
-                    <form method="post" class="admin-form">
+                    <form method="post" class="admin-form" enctype="multipart/form-data">
                         <div class="form-group">
                             <label for="category_name">Category Name</label>
                             <input type="text" id="category_name" name="category_name" class="form-control" placeholder="Enter category name" required>
@@ -132,6 +151,11 @@ $page_title = "Manage Categories";
                             <label for="icon">Icon (Font Awesome class name)</label>
                             <input type="text" id="icon" name="icon" class="form-control" placeholder="e.g. tag, box, print">
                             <small>Enter the Font Awesome icon name without the "fa-" prefix</small>
+                        </div>
+                        <div class="form-group">
+                            <label for="image">Category Image</label>
+                            <input type="file" id="image" name="image" class="form-control" accept="image/*">
+                            <small>Optional. Upload a category image (jpg, png, etc.)</small>
                         </div>
                         <button type="submit" name="action" value="add" class="btn-primary">Add Category</button>
                     </form>
@@ -147,13 +171,14 @@ $page_title = "Manage Categories";
                                     <th>ID</th>
                                     <th>Name</th>
                                     <th>Icon</th>
+                                    <th>Image</th>
                                     <th>Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <?php foreach ($categories as $cat): ?>
                                 <tr>
-                                    <form method="post">
+                                    <form method="post" enctype="multipart/form-data">
                                         <td><?php echo $cat['id']; ?></td>
                                         <td>
                                             <input type="text" name="category_name" class="form-control" value="<?php echo htmlspecialchars($cat['name']); ?>" required>
@@ -164,6 +189,14 @@ $page_title = "Manage Categories";
                                             <?php if (!empty($cat['icon'])): ?>
                                                 <i class="fas fa-<?php echo htmlspecialchars($cat['icon']); ?>"></i>
                                             <?php endif; ?>
+                                        </td>
+                                        <td>
+                                            <?php if (!empty($cat['image_url'])): ?>
+                                                <img src="../uploads/categories/<?php echo htmlspecialchars($cat['image_url']); ?>" alt="Category Image" style="width:40px;height:40px;object-fit:cover;">
+                                            <?php else: ?>
+                                                <span style="color:#aaa;">No image</span>
+                                            <?php endif; ?>
+                                            <input type="file" name="image" class="form-control" accept="image/*" style="margin-top:5px;">
                                         </td>
                                         <td>
                                             <button type="submit" name="action" value="edit" class="btn-small">Update</button>
