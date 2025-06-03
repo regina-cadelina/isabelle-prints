@@ -1,6 +1,15 @@
 <?php
 require_once '../config/database.php';
 
+session_start(); // Make sure session is started
+
+$current_user = null;
+if (isset($_SESSION['user_id'])) {
+    $stmt = $pdo->prepare("SELECT * FROM users WHERE id = ?");
+    $stmt->execute([$_SESSION['user_id']]);
+    $current_user = $stmt->fetch();
+}
+
 // Create FAQs table if it doesn't exist (optional safety)
 $pdo->exec("
     CREATE TABLE IF NOT EXISTS faqs (
@@ -49,7 +58,7 @@ $page_title = "Manage FAQs";
                 <h2><i class="fas fa-cog"></i> Admin Panel</h2>
             </div>
             <div class="admin-user">
-                <span>&nbsp Welcome, <?php echo htmlspecialchars($current_user['first_name']); ?></span>
+                <span>&nbsp Welcome, <?php echo htmlspecialchars($current_user['first_name'] ?? 'Admin'); ?></span>
                 <a href="../pages/logout.php" class="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</a>
             </div>
         </div>
