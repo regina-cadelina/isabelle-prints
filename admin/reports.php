@@ -166,9 +166,9 @@ $page_title = "Sales Report";
         <main class="admin-main">
             <div class="admin-content">
                 <h1>Sales Report</h1>
-                <p><a href="dashboard.php">&larr; Back to Dashboard</a></p>
                 <div class="admin-form" style="margin-top: 30px;">
                     <h2>Summary</h2>
+                    <button type="reset"class="btn btn-secondary" style="float:right; margin-bottom:15px;" onclick="window.location.href='../tcpdf6/examples/print-reports.php'"><i class="fas fa-print"></i> Print</button>
                     <ul>
                         <li><strong>Total Products:</strong> <?php echo $totalProducts; ?></li>
                         <li><strong>Total Orders:</strong> <?php echo $totalOrders; ?></li>

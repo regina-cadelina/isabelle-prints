@@ -83,10 +83,14 @@ $page_title = "Order Details #" . $order['id'];
         <!-- Main Content -->
         <main class="admin-main">
             <div class="admin-content">
+                <!-- Back to Orders Link -->
                 <a href="orders.php" class="back-link">
                     <i class="fas fa-arrow-left"></i> Back to Orders
                 </a>
-                
+
+                <!-- Print Button -->
+                <button type="reset"class="btn btn-secondary" style="float:right; margin-bottom:15px;" onclick="window.location.href='../tcpdf6/examples/print-order-details.php'"><i class="fas fa-print"></i> Print</button>
+
                 <h1><i class="fas fa-receipt"></i> Order Details #<?php echo htmlspecialchars($order['id']); ?></h1>
                 
                 <!-- Order Details Grid -->
