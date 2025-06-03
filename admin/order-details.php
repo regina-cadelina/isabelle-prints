@@ -117,6 +117,11 @@ $page_title = "Order Details #" . $order['id'];
                                     <div class="order-info-label">Email</div>
                                     <div class="order-info-value"><?php echo htmlspecialchars($order['email']); ?></div>
                                 </div>
+                                <!-- Add phone number here -->
+                                <div class="order-info-item">
+                                    <div class="order-info-label">Phone Number</div>
+                                    <div class="order-info-value"><?php echo htmlspecialchars($order['phone'] ?? ''); ?></div>
+                                </div>
                                 
                                 <div class="order-info-item">
                                     <div class="order-info-label">Status</div>
