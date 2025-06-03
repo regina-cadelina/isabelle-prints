@@ -21,7 +21,20 @@ $page_title = "Sales Report";
     <link rel="stylesheet" href="../assets/css/style.css">
     <link rel="stylesheet" href="../assets/css/admin.css">
 </head>
-<body class="admin-body"><?php
+<body class="admin-body">
+        <!-- Admin Header -->
+        <header class="admin-header">
+        <div class="admin-nav">
+            <div class="admin-brand">
+                <h2><i class="fas fa-cog"></i> Admin Panel</h2>
+            </div>
+            <div class="admin-user">
+                <span>&nbsp Welcome, <?php echo htmlspecialchars($current_user['first_name']); ?></span>
+                <a href="../logout.php" class="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</a>
+            </div>
+        </div>
+    </header>
+    <?php
 require_once '../config/database.php';
 
 // Get total orders and total sales

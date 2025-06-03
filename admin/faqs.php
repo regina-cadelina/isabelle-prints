@@ -42,6 +42,18 @@ $page_title = "Manage FAQs";
     <link rel="stylesheet" href="../assets//css/admin.css">
 </head>
 <body class="admin-body">
+    <!-- Admin Header -->
+    <header class="admin-header">
+        <div class="admin-nav">
+            <div class="admin-brand">
+                <h2><i class="fas fa-cog"></i> Admin Panel</h2>
+            </div>
+            <div class="admin-user">
+                <span>&nbsp Welcome, <?php echo htmlspecialchars($current_user['first_name']); ?></span>
+                <a href="../pages/logout.php" class="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</a>
+            </div>
+        </div>
+    </header>
     <div class="admin-container">
         <main class="admin-main">
             <div class="admin-content">
