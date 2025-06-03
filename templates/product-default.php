@@ -24,7 +24,8 @@
             <p><?php echo nl2br(htmlspecialchars($product['description'])); ?></p>
         </div>
         
-        <form id="addToCartForm" class="product-form">
+
+        <form id="addToCartForm" class="product-form" method="POST" enctype="multipart/form-data">
             <input type="hidden" name="product_id" value="<?php echo $product['id']; ?>">
             
             <?php if (isset($groupedOptions['size'])): ?>
@@ -92,6 +93,18 @@
                 <textarea name="notes" class="form-control" placeholder="Add any special instructions or customization details here..."></textarea>
             </div>
             
+            <div class="form-group">
+                <label for="custom_file">Upload Custom Image (JPG, PNG, PDF):</label>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <!-- Image Preview -->
+                    <div id="customImagePreview" style="margin-right:10px;">
+                        <img id="previewImg" src="#" alt="Preview" style="display:none; max-width:60px; max-height:60px; border:1px solid #ccc; border-radius:8px;"/>
+                    </div>
+                    <!-- File Input -->
+                    <input type="file" class="form-control" name="custom_file" id="custom_file" accept=".jpg,.jpeg,.png,.pdf">
+                </div>
+            </div>
+            
             <div class="form-actions">
                 <button type="button" class="btn btn-primary" onclick="addToCartModal()">ADD TO CART</button>
                 <button type="button" class="btn btn-secondary" onclick="closeModal()">VIEW DETAILS</button>
@@ -99,3 +112,48 @@
         </form>
     </div>
 </div>
+
+<?php
+$customImageFile = null;
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['custom_file']) && $_FILES['custom_file']['error'] === UPLOAD_ERR_OK) {
+    $uploadDir = __DIR__ . '/../uploads/custom/';
+    if (!is_dir($uploadDir)) {
+        mkdir($uploadDir, 0755, true);
+    }
+
+    $fileExtension = strtolower(pathinfo($_FILES['custom_file']['name'], PATHINFO_EXTENSION));
+    $allowedExtensions = ['jpg', 'jpeg', 'png', 'pdf'];
+
+    if (in_array($fileExtension, $allowedExtensions)) {
+        $fileName = 'custom_' . time() . '_' . uniqid() . '.' . $fileExtension;
+        $uploadPath = $uploadDir . $fileName;
+
+        if (move_uploaded_file($_FILES['custom_file']['tmp_name'], $uploadPath)) {
+            $customImageFile = $fileName;
+            // Save $customImageFile to your cart/session/order as needed
+        } else {
+            $error = 'Failed to upload custom file.';
+        }
+    } else {
+        $error = 'Invalid custom file type. Only JPG, PNG, and PDF are allowed.';
+    }
+}
+?>
+
+<script>
+document.getElementById('custom_file').addEventListener('change', function(event) {
+    const preview = document.getElementById('previewImg');
+    const file = event.target.files[0];
+    if (file && file.type.match('image.*')) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            preview.src = e.target.result;
+            preview.style.display = 'block';
+        }
+        reader.readAsDataURL(file);
+    } else {
+        preview.src = '#';
+        preview.style.display = 'none';
+    }
+});
+</script>

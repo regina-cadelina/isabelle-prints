@@ -37,6 +37,26 @@ $stmt->execute([$order_id]);
 $items = $stmt->fetchAll();
 
 $page_title = "Order Details #" . $order['id'];
+
+// Handle custom image upload for this order
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['custom_image']) && $_FILES['custom_image']['error'] === UPLOAD_ERR_OK) {
+    $target_dir = "../uploads/custom/";
+    if (!is_dir($target_dir)) mkdir($target_dir, 0777, true);
+    $ext = strtolower(pathinfo($_FILES['custom_image']['name'], PATHINFO_EXTENSION));
+    $allowed = ['jpg', 'jpeg', 'png', 'pdf'];
+    if (in_array($ext, $allowed)) {
+        $filename = uniqid('custom_', true) . '.' . $ext;
+        $target_file = $target_dir . $filename;
+        if (move_uploaded_file($_FILES['custom_image']['tmp_name'], $target_file)) {
+            // Update the order's custom_image field in the database
+            $stmt = $pdo->prepare("UPDATE orders SET custom_image = ? WHERE id = ?");
+            $stmt->execute([$filename, $order_id]);
+            // Refresh to show the new image
+            header("Location: order-details.php?id=" . $order_id);
+            exit;
+        }
+    }
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -216,7 +236,28 @@ $page_title = "Order Details #" . $order['id'];
                     </div>
                 </div>
 
-                <!-- Upload Proof of Payment -->
+                
+<!-- Order Details Section -->
+<div class="order-details-section">
+    <h2>Order Details</h2>
+    <!-- ...existing order details fields... -->
+
+    <!-- Customization Image Section -->
+    <?php if (!empty($order['custom_image'])): ?>
+        <div class="custom-image-section" style="margin-top:20px;">
+            <h3>Uploaded Custom Image</h3>
+            <img src="../uploads/custom/<?php echo htmlspecialchars($order['custom_image']); ?>" alt="Custom Upload" style="max-width:200px;max-height:200px;object-fit:contain;border:1px solid #ccc;padding:5px;">
+            <p>
+                <a href="../uploads/custom/<?php echo htmlspecialchars($order['custom_image']); ?>" target="_blank" class="btn-small">View Full Image</a>
+            </p>
+        </div>
+    <?php else: ?>
+        <div class="custom-image-section" style="margin-top:20px;">
+            <h3>Uploaded Custom Image</h3>
+            <p style="color:#888;">No custom image uploaded for this order.</p>
+        </div>
+    <?php endif; ?>
+</div>
                 
             </div>
         </main>
