@@ -15,7 +15,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         switch ($_POST['action']) {
             case 'add_product':
                 $slug = strtolower(str_replace(' ', '-', $_POST['product_name']));
-                $stmt = $pdo->prepare("INSERT INTO products (category_id, product_name, slug, description, short_description, base_price, sku, stock_quantity, is_bestseller, is_new) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                $imageFileName = null;
+                if (isset($_FILES['product_image']) && $_FILES['product_image']['error'] === UPLOAD_ERR_OK) {
+                    $ext = strtolower(pathinfo($_FILES['product_image']['name'], PATHINFO_EXTENSION));
+                    $allowed = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+                    if (in_array($ext, $allowed)) {
+                        $imageFileName = uniqid('prod_', true) . '.' . $ext;
+                        move_uploaded_file($_FILES['product_image']['tmp_name'], __DIR__ . '/../uploads/products/' . $imageFileName);
+                    }
+                }
+                $stmt = $pdo->prepare("INSERT INTO products (category_id, product_name, slug, description, short_description, base_price, sku, stock_quantity, is_bestseller, is_new, image_url) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
                 $stmt->execute([
                     $_POST['category_id'],
                     $_POST['product_name'],
@@ -26,13 +35,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $_POST['sku'] ?? '',
                     $_POST['stock_quantity'],
                     isset($_POST['is_bestseller']) ? 1 : 0,
-                    isset($_POST['is_new']) ? 1 : 0
+                    isset($_POST['is_new']) ? 1 : 0,
+                    $imageFileName
                 ]);
                 $success = "Product added successfully!";
                 break;
 
             case 'update_product':
-                $stmt = $pdo->prepare("UPDATE products SET category_id = ?, product_name = ?, description = ?, short_description = ?, base_price = ?, sku = ?, stock_quantity = ?, is_bestseller = ?, is_new = ? WHERE id = ?");
+                $imageFileName = $edit_product['image_url'] ?? null;
+                if (isset($_FILES['product_image']) && $_FILES['product_image']['error'] === UPLOAD_ERR_OK) {
+                    $ext = strtolower(pathinfo($_FILES['product_image']['name'], PATHINFO_EXTENSION));
+                    $allowed = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+                    if (in_array($ext, $allowed)) {
+                        $imageFileName = uniqid('prod_', true) . '.' . $ext;
+                        move_uploaded_file($_FILES['product_image']['tmp_name'], __DIR__ . '/../uploads/products/' . $imageFileName);
+                    }
+                }
+                $stmt = $pdo->prepare("UPDATE products SET category_id = ?, product_name = ?, description = ?, short_description = ?, base_price = ?, sku = ?, stock_quantity = ?, is_bestseller = ?, is_new = ?, image_url = ? WHERE id = ?");
                 $stmt->execute([
                     $_POST['category_id'],
                     $_POST['product_name'],
@@ -43,6 +62,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $_POST['stock_quantity'],
                     isset($_POST['is_bestseller']) ? 1 : 0,
                     isset($_POST['is_new']) ? 1 : 0,
+                    $imageFileName,
                     $_POST['product_id']
                 ]);
                 $success = "Product updated successfully!";
@@ -128,7 +148,7 @@ $page_title = "Manage Products";
                 <!-- Add/Edit Product Form -->
                 <div class="admin-form">
                     <h2><?php echo $edit_product ? 'Edit Product' : 'Add New Product'; ?></h2>
-                    <form method="POST">
+                    <form method="POST" enctype="multipart/form-data">
                         <input type="hidden" name="action" value="<?php echo $edit_product ? 'update_product' : 'add_product'; ?>" />
                         <?php if ($edit_product): ?>
                             <input type="hidden" name="product_id" value="<?php echo (int)$edit_product['id']; ?>" />
@@ -198,6 +218,16 @@ $page_title = "Manage Products";
                                     New Product
                                 </label>
                             </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="product_image">Product Image</label>
+                            <input type="file" id="product_image" name="product_image" accept="image/*" class="form-control" />
+                            <?php if ($edit_product && $edit_product['image_url']): ?>
+                                <div style="margin-top:10px;">
+                                    <img src="../uploads/products/<?php echo htmlspecialchars($edit_product['image_url']); ?>" alt="Product Image" style="max-width:100px;">
+                                </div>
+                            <?php endif; ?>
                         </div>
 
                         <div class="form-actions">
