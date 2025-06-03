@@ -1,4 +1,6 @@
 <?php
+require_once '../includes/functions.php';
+require_once '../config/database.php';
 $pageTitle = "My Orders";
 include '../includes/header.php';
 
@@ -7,6 +9,23 @@ if (!isLoggedIn()) {
     $_SESSION['redirect_after_login'] = '/isabelle-prints/pages/orders.php';
     header('Location: /isabelle-prints/pages/login.php');
     exit;
+}
+
+// Handle order cancellation
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['cancel_order_id'])) {
+    $order_id = (int)$_POST['cancel_order_id'];
+    // Only allow cancellation if the order belongs to the user and is pending/processing
+    $stmt = $pdo->prepare("SELECT * FROM orders WHERE id = ? AND user_id = ? AND status IN ('pending', 'processing')");
+    $stmt->execute([$order_id, $_SESSION['user_id']]);
+    $order = $stmt->fetch();
+    if ($order) {
+        $stmt = $pdo->prepare("UPDATE orders SET status = 'cancelled' WHERE id = ?");
+        $stmt->execute([$order_id]);
+        // Optionally: Notify admin via email or log
+        $success = 'Order cancelled successfully.';
+    } else {
+        $success = 'Unable to cancel this order.';
+    }
 }
 
 $success = '';
@@ -94,6 +113,12 @@ $orders = $stmt->fetchAll();
                             <button class="btn btn-secondary" onclick="viewOrderDetails(<?php echo $order['id']; ?>)">
                                 View Details
                             </button>
+                            <?php if ($order['status'] === 'pending' || $order['status'] === 'processing'): ?>
+                                <form method="POST" style="display:inline;" onsubmit="return confirm('Are you sure you want to cancel this order?');">
+                                    <input type="hidden" name="cancel_order_id" value="<?php echo $order['id']; ?>">
+                                    <button type="submit" class="btn btn-danger">Cancel Order</button>
+                                </form>
+                            <?php endif; ?>
                             <?php if ($order['status'] === 'pending'): ?>
                                 <span class="payment-status">Payment under review</span>
                             <?php elseif ($order['status'] === 'processing'): ?>
