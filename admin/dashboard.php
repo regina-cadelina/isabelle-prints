@@ -69,7 +69,7 @@ $page_title = "Admin Dashboard";
                 <h2><i class="fas fa-cog"></i> Admin Panel</h2>
             </div>
             <div class="admin-user">
-                <span>Welcome, <?php echo htmlspecialchars($current_user['first_name']); ?></span>
+                <span>&nbsp Welcome, <?php echo htmlspecialchars($current_user['first_name']); ?></span>
                 <a href="../pages/logout.php" class="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</a>
             </div>
         </div>
