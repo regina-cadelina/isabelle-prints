@@ -157,29 +157,25 @@ $page_title = "Order Details #" . $order['id'];
                     </div>
 
                     <!-- Proof of Payment -->
-                    <div class="payment-proof-section">
-                        <div class="payment-proof-header">
-                            <i class="fas fa-receipt"></i> Proof of Payment
-                        </div>
-                        <div class="payment-proof-body">
-                            <?php if (!empty($order['proof_of_payment'])): ?>
-                                <?php $proofUrl = '../uploads/proof/' . htmlspecialchars($order['proof_of_payment']); ?>
-                                <a href="<?php echo $proofUrl; ?>" target="_blank" class="proof-link">
-                                    <i class="fas fa-external-link-alt"></i> View Full Size
-                                </a>
-                                <br>
-                                <img src="<?php echo $proofUrl; ?>" alt="Proof of Payment" class="proof-image">
-                            <?php else: ?>
-                                <div class="no-proof-message">
-                                    <i class="fas fa-exclamation-triangle"></i>
-                                    No proof of payment uploaded yet.
-                                </div>
-                            <?php endif; ?>
-                        </div>
-                    </div>
-                </div>
+<div class="payment-proof-section">
+    <div class="payment-proof-header">
+        <i class="fas fa-receipt"></i> Proof of Payment
+    </div>
+    <div class="payment-proof-body">
+        <?php if (!empty($order['payment_proof_file'])): ?>
+            <?php $proofUrl = '../uploads/payment-proofs/' . htmlspecialchars($order['payment_proof_file']); ?>
+            
+            <br>
+            <img src="<?php echo $proofUrl; ?>" alt="Proof of Payment" class="proof-image">
+        <?php else: ?>
+            <div class="no-proof-message">
+                <i class="fas fa-exclamation-triangle"></i>
+                No proof of payment uploaded yet.
+            </div>
+        <?php endif; ?>
+    </div>
+</div>
 
-<<<<<<< HEAD
                 <!-- Order Items -->
                 <div class="order-items-section">
                     <div class="order-items-header">
@@ -210,20 +206,11 @@ $page_title = "Order Details #" . $order['id'];
                         </table>
                     </div>
                 </div>
+
+                <!-- Upload Proof of Payment -->
+                
             </div>
         </main>
-=======
-        <?php if (!empty($order['payment_proof_file'])): ?>
-            <p><strong>Proof of Payment:</strong></p>
-            <p>
-                <img src="../uploads/payment-proofs/<?php echo htmlspecialchars($order['payment_proof_file']); ?>"
-                     alt="Proof of Payment"
-                     style="max-width: 400px; border: 1px solid #ccc; padding: 5px;">
-            </p>
-        <?php else: ?>
-            <p><strong>Proof of Payment:</strong> Not uploaded.</p>
-        <?php endif; ?>
->>>>>>> 7e4279db8f049c79ffcb3e44e6ac05beeff2a859
     </div>
 </body>
 </html>
