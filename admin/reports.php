@@ -151,8 +151,8 @@ $page_title = "Sales Report";
         <nav class="admin-menu">
             <ul>
                 <li><a href="dashboard.php"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
-                <li><a href="products.php"><i class="fas fa-box"></i> Manage Products</a></li>
                 <li><a href="categories.php"><i class="fas fa-tags"></i> Manage Categories</a></li>
+                <li><a href="products.php"><i class="fas fa-box"></i> Manage Products</a></li>
                 <li><a href="orders.php"><i class="fas fa-shopping-cart"></i> Manage Orders</a></li>
                 <li><a href="customers.php"><i class="fas fa-users"></i> Customers</a></li>
                 <li><a href="reports.php" class="active"><i class="fas fa-chart-bar"></i> Reports</a></li>
@@ -166,7 +166,6 @@ $page_title = "Sales Report";
         <main class="admin-main">
             <div class="admin-content">
                 <h1>Sales Report</h1>
-                <p><a href="dashboard.php">&larr; Back to Dashboard</a></p>
                 <div class="admin-form" style="margin-top: 30px;">
                     <h2>Summary</h2>
                     <ul>
