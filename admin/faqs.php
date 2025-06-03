@@ -18,8 +18,8 @@ $page_title = "Manage FAQs";
 <head>
     <meta charset="UTF-8">
     <title><?php echo $page_title; ?></title>
-    <link rel="stylesheet" href="../css/style.css">
-    <link rel="stylesheet" href="../css/admin.css">
+    <link rel="stylesheet" href="../assets/css/style.css">
+    <link rel="stylesheet" href="../assets/css/admin.css">
 </head>
 <body class="admin-body">
     <div class="admin-container">
