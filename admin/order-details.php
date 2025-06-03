@@ -179,6 +179,7 @@ $page_title = "Order Details #" . $order['id'];
                     </div>
                 </div>
 
+<<<<<<< HEAD
                 <!-- Order Items -->
                 <div class="order-items-section">
                     <div class="order-items-header">
@@ -211,6 +212,18 @@ $page_title = "Order Details #" . $order['id'];
                 </div>
             </div>
         </main>
+=======
+        <?php if (!empty($order['payment_proof_file'])): ?>
+            <p><strong>Proof of Payment:</strong></p>
+            <p>
+                <img src="../uploads/payment-proofs/<?php echo htmlspecialchars($order['payment_proof_file']); ?>"
+                     alt="Proof of Payment"
+                     style="max-width: 400px; border: 1px solid #ccc; padding: 5px;">
+            </p>
+        <?php else: ?>
+            <p><strong>Proof of Payment:</strong> Not uploaded.</p>
+        <?php endif; ?>
+>>>>>>> 7e4279db8f049c79ffcb3e44e6ac05beeff2a859
     </div>
 </body>
 </html>
