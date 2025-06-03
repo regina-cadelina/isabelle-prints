@@ -32,11 +32,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// Fetch active orders with corrected user_id reference (assuming `users.id`)
-$stmt = $pdo->query("SELECT o.id AS order_id, o.total_amount, o.status, o.payment_status, o.created_at, u.first_name, u.last_name, u.email 
-                     FROM orders o 
-                     LEFT JOIN users u ON o.user_id = u.id 
-                     ORDER BY o.created_at DESC");
+// --- SEARCH FUNCTIONALITY ---
+$search = trim($_GET['search'] ?? '');
+$search_sql = '';
+$params = [];
+if ($search !== '') {
+    $search_sql = "WHERE (o.id LIKE :search OR o.status LIKE :search OR o.payment_status LIKE :search OR u.first_name LIKE :search OR u.last_name LIKE :search OR u.email LIKE :search)";
+    $params[':search'] = "%$search%";
+}
+
+// Fetch orders with search
+$query = "
+    SELECT o.id AS order_id, o.total_amount, o.status, o.payment_status, o.created_at, u.first_name, u.last_name, u.email 
+    FROM orders o 
+    LEFT JOIN users u ON o.user_id = u.id 
+    $search_sql
+    ORDER BY o.created_at DESC
+";
+$stmt = $pdo->prepare($query);
+$stmt->execute($params);
 $orders = $stmt->fetchAll();
 
 $page_title = "Manage Orders";
@@ -83,6 +97,16 @@ $statusOptions = ['pending', 'processing', 'shipped', 'completed', 'cancelled'];
                 <?php if (isset($success)): ?>
                     <div class="alert alert-success"><?php echo $success; ?></div>
                 <?php endif; ?>
+
+                <!-- Search Form -->
+                <form method="get" style="margin-bottom:15px;display:flex;gap:10px;align-items:center;">
+                    <input type="text" name="search" class="form-control" placeholder="Search by order #, customer, email, status..." value="<?php echo htmlspecialchars($search); ?>" style="max-width:250px;">
+                    <button type="submit" class="btn-secondary"><i class="fas fa-search"></i> Search</button>
+                    <?php if ($search): ?>
+                        <a href="orders.php" class="btn-secondary" style="background:#eee;color:#333;">Clear</a>
+                    <?php endif; ?>
+                </form>
+
                 <div class="admin-form" style="margin-top: 30px;">
                     <h2>All Orders</h2>
                     <div class="table-container">
@@ -94,7 +118,7 @@ $statusOptions = ['pending', 'processing', 'shipped', 'completed', 'cancelled'];
                                     <th>Email</th>
                                     <th>Total</th>
                                     <th>Status</th>
-                                    <th>Payment Status</th> <!-- New column -->
+                                    <th>Payment Status</th>
                                     <th>Date</th>
                                     <th>Actions</th>
                                 </tr>
