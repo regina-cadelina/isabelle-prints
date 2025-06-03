@@ -112,7 +112,9 @@ require_once 'config/database.php';
                             <div class="product-card" onclick="openProductModal(<?php echo $product['id']; ?>)">
                                 <div class="product-image">
                                     <?php if (!empty($product['image_url'])): ?>
-                                        <img src="<?php echo htmlspecialchars($product['image_url']); ?>" alt="<?php echo htmlspecialchars($product['name']); ?>">
+                                        <a href="/isabelle-prints/pages/products.php?category=<?php echo htmlspecialchars($product['category_id'] ?? ''); ?>">
+                                            <img src="<?php echo htmlspecialchars($product['image_url']); ?>" alt="<?php echo htmlspecialchars($product['name']); ?>">
+                                        </a>
                                     <?php else: ?>
                                         <div class="placeholder-image">
                                             <i class="fas fa-image"></i>

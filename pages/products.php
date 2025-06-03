@@ -45,7 +45,7 @@ try {
     $query = "SELECT p.*, c.name as category_name 
               FROM products p 
               LEFT JOIN categories c ON p.category_id = c.id 
-              WHERE 1=1";
+              WHERE p.is_active = 1";
     
     $params = [];
     
@@ -189,12 +189,16 @@ function openProductModal(productId) {
 
 function displayProductModal(product) {
     const modalContent = document.getElementById('modalContent');
-    
+    // Fix: prepend the correct path to the image_url
+    const imagePath = product.image_url 
+        ? `/isabelle-prints/uploads/products/${product.image_url}` 
+        : '';
+
     modalContent.innerHTML = `
         <div class="product-modal-content">
             <div class="product-modal-image">
                 ${product.image_url ? 
-                    `<img src="${product.image_url}" alt="${product.name}">` : 
+                    `<img src="${imagePath}" alt="${product.name}">` : 
                     '<div class="placeholder-image"><i class="fas fa-image"></i></div>'
                 }
             </div>

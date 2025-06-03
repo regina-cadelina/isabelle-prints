@@ -24,7 +24,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $success = "Payment status updated!";
                 break;
             case 'delete_order':
-                $stmt = $pdo->prepare("UPDATE orders SET is_active = 0 WHERE id = ?");
+                $stmt = $pdo->prepare("DELETE FROM orders WHERE id = ?");
                 $stmt->execute([$_POST['order_id']]);
                 $success = "Order deleted!";
                 break;
