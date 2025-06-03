@@ -15,6 +15,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         switch ($_POST['action']) {
             case 'add_product':
                 $slug = strtolower(str_replace(' ', '-', $_POST['product_name']));
+                // Check for duplicate slug
+                $stmt = $pdo->prepare("SELECT COUNT(*) FROM products WHERE slug = ?");
+                $stmt->execute([$slug]);
+                if ($stmt->fetchColumn() > 0) {
+                    $error = "A product with this name/slug already exists. Please use a different name.";
+                    break;
+                }
                 $imageFileName = null;
                 if (isset($_FILES['product_image']) && $_FILES['product_image']['error'] === UPLOAD_ERR_OK) {
                     $ext = strtolower(pathinfo($_FILES['product_image']['name'], PATHINFO_EXTENSION));
@@ -143,6 +150,10 @@ $page_title = "Manage Products";
 
                 <?php if (isset($success)): ?>
                     <div class="alert alert-success"><?php echo htmlspecialchars($success); ?></div>
+                <?php endif; ?>
+
+                <?php if (isset($error)): ?>
+                    <div class="alert alert-danger"><?php echo htmlspecialchars($error); ?></div>
                 <?php endif; ?>
 
                 <!-- Add/Edit Product Form -->
