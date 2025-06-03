@@ -36,6 +36,7 @@ if (isset($_GET['success']) && $_GET['success'] === 'order_placed') {
 // Get user's orders
 $stmt = $pdo->prepare("
     SELECT o.*, 
+           o.payment_status,  -- Add this line if not already present
            COUNT(oi.id) as item_count,
            GROUP_CONCAT(p.name SEPARATOR ', ') as product_names
     FROM orders o 
@@ -83,6 +84,9 @@ $orders = $stmt->fetchAll();
                             <div class="order-status">
                                 <span class="status-badge status-<?php echo $order['status']; ?>">
                                     <?php echo ucfirst($order['status']); ?>
+                                </span>
+                                <span class="payment-badge payment-<?php echo $order['payment_status']; ?>" style="margin-left:10px;">
+                                    <?php echo 'Payment: ' . ucfirst($order['payment_status']); ?>
                                 </span>
                             </div>
                         </div>

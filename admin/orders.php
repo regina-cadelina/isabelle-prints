@@ -14,12 +14,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['action'])) {
         switch ($_POST['action']) {
             case 'update_status':
-                $stmt = $pdo->prepare("UPDATE orders SET status = ? WHERE order_id = ?");
+                $stmt = $pdo->prepare("UPDATE orders SET status = ? WHERE id = ?");
                 $stmt->execute([$_POST['status'], $_POST['order_id']]);
                 $success = "Order status updated!";
                 break;
+            case 'update_payment_status':
+                $stmt = $pdo->prepare("UPDATE orders SET payment_status = ? WHERE id = ?");
+                $stmt->execute([$_POST['payment_status'], $_POST['order_id']]);
+                $success = "Payment status updated!";
+                break;
             case 'delete_order':
-                $stmt = $pdo->prepare("UPDATE orders SET is_active = 0 WHERE order_id = ?");
+                $stmt = $pdo->prepare("UPDATE orders SET is_active = 0 WHERE id = ?");
                 $stmt->execute([$_POST['order_id']]);
                 $success = "Order deleted!";
                 break;
@@ -28,7 +33,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // Fetch active orders with corrected user_id reference (assuming `users.id`)
-$stmt = $pdo->query("SELECT o.id AS order_id, o.total_amount, o.status, o.created_at, u.first_name, u.last_name, u.email 
+$stmt = $pdo->query("SELECT o.id AS order_id, o.total_amount, o.status, o.payment_status, o.created_at, u.first_name, u.last_name, u.email 
                      FROM orders o 
                      LEFT JOIN users u ON o.user_id = u.id 
                      ORDER BY o.created_at DESC");
@@ -89,41 +94,55 @@ $statusOptions = ['pending', 'processing', 'shipped', 'completed', 'cancelled'];
                                     <th>Email</th>
                                     <th>Total</th>
                                     <th>Status</th>
+                                    <th>Payment Status</th> <!-- New column -->
                                     <th>Date</th>
                                     <th>Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <?php foreach ($orders as $order): ?>
-                                <tr>
-                                    <td><?php echo htmlspecialchars($order['order_id']); ?></td>
-                                    <td><?php echo htmlspecialchars($order['first_name'] . ' ' . $order['last_name']); ?></td>
-                                    <td><?php echo htmlspecialchars($order['email']); ?></td>
-                                    <td><?php echo number_format($order['total_amount'], 2); ?></td>
-                                    <td>
-                                        <form method="POST" style="display:inline;">
-                                            <input type="hidden" name="action" value="update_status">
-                                            <input type="hidden" name="order_id" value="<?php echo htmlspecialchars($order['order_id']); ?>">
-                                            <select name="status" onchange="if(confirm('Change order status?')) this.form.submit();">
-                                                <?php foreach ($statusOptions as $status): ?>
-                                                    <option value="<?php echo $status; ?>" <?php if($order['status'] == $status) echo 'selected'; ?>>
-                                                        <?php echo ucfirst($status); ?>
-                                                    </option>
-                                                <?php endforeach; ?>
-                                            </select>
-                                        </form>
-                                    </td>
-                                    <td><?php echo date('Y-m-d H:i', strtotime($order['created_at'])); ?></td>
-                                    <td>
-                                        <form method="POST" style="display:inline;" onsubmit="return confirm('Delete this order?');">
-                                            <input type="hidden" name="action" value="delete_order">
-                                            <input type="hidden" name="order_id" value="<?php echo htmlspecialchars($order['order_id']); ?>">
-                                            <button type="submit" class="btn-small btn-danger">Delete</button>
-                                        </form>
-                                        <a href="order-details.php?id=<?php echo $order['order_id']; ?>" class="btn-small">View</a>
-                                    </td>
-                                </tr>
-                                <?php endforeach; ?>
+<?php foreach ($orders as $order): ?>
+<tr>
+    <td><?php echo htmlspecialchars($order['order_id']); ?></td>
+    <td><?php echo htmlspecialchars($order['first_name'] . ' ' . $order['last_name']); ?></td>
+    <td><?php echo htmlspecialchars($order['email']); ?></td>
+    <td><?php echo number_format($order['total_amount'], 2); ?></td>
+    <td>
+        <form method="POST" style="display:inline;">
+            <input type="hidden" name="action" value="update_status">
+            <input type="hidden" name="order_id" value="<?php echo htmlspecialchars($order['order_id']); ?>">
+            <select name="status" onchange="if(confirm('Change order status?')) this.form.submit();">
+                <?php foreach ($statusOptions as $status): ?>
+                    <option value="<?php echo $status; ?>" <?php if($order['status'] == $status) echo 'selected'; ?>>
+                        <?php echo ucfirst($status); ?>
+                    </option>
+                <?php endforeach; ?>
+            </select>
+        </form>
+    </td>
+    <td>
+        <form method="POST" style="display:inline;">
+            <input type="hidden" name="action" value="update_payment_status">
+            <input type="hidden" name="order_id" value="<?php echo htmlspecialchars($order['order_id']); ?>">
+            <select name="payment_status" onchange="if(confirm('Change payment status?')) this.form.submit();">
+                <?php foreach (['unpaid', 'pending', 'paid'] as $payStatus): ?>
+                    <option value="<?php echo $payStatus; ?>" <?php if($order['payment_status'] == $payStatus) echo 'selected'; ?>>
+                        <?php echo ucfirst($payStatus); ?>
+                    </option>
+                <?php endforeach; ?>
+            </select>
+        </form>
+    </td>
+    <td><?php echo date('Y-m-d H:i', strtotime($order['created_at'])); ?></td>
+    <td>
+        <form method="POST" style="display:inline;" onsubmit="return confirm('Delete this order?');">
+            <input type="hidden" name="action" value="delete_order">
+            <input type="hidden" name="order_id" value="<?php echo htmlspecialchars($order['order_id']); ?>">
+            <button type="submit" class="btn-small btn-danger">Delete</button>
+        </form>
+        <a href="order-details.php?id=<?php echo $order['order_id']; ?>" class="btn-small">View</a>
+    </td>
+</tr>
+<?php endforeach; ?>
                             </tbody>
                         </table>
                     </div>
