@@ -65,19 +65,16 @@ $items = $stmt->fetchAll();
             <p><strong>Remaining Balance:</strong> <?php echo number_format($order['total_amount'] - $order['downpayment_amount'], 2); ?></p>
         <?php endif; ?>
 
-        <p style="margin-top:20px; color:#2980b9;">
-            <strong>Proof of Payment:</strong>
-            <?php
-            // Example: If you store proof of payment as a file/image URL in $order['proof_of_payment']
-            if (!empty($order['proof_of_payment'])) {
-                $proofUrl = '../uploads/proof/' . htmlspecialchars($order['proof_of_payment']);
-                echo "<br><a href=\"$proofUrl\" target=\"_blank\">View Proof of Payment</a>";
-                echo "<br><img src=\"$proofUrl\" alt=\"Proof of Payment\" style=\"max-width:200px; margin-top:10px; border:1px solid #ccc;\">";
-            } else {
-                echo "No proof of payment uploaded.";
-            }
-            ?>
-        </p>
+        <?php if (!empty($order['payment_proof_file'])): ?>
+            <p><strong>Proof of Payment:</strong></p>
+            <p>
+                <img src="../uploads/payment-proofs/<?php echo htmlspecialchars($order['payment_proof_file']); ?>"
+                     alt="Proof of Payment"
+                     style="max-width: 400px; border: 1px solid #ccc; padding: 5px;">
+            </p>
+        <?php else: ?>
+            <p><strong>Proof of Payment:</strong> Not uploaded.</p>
+        <?php endif; ?>
     </div>
     <h2>Items</h2>
     <table class="order-items">
