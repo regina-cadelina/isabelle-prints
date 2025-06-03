@@ -43,6 +43,7 @@ if (isset($_GET['order_id'])) {
 </head>
 <body>
 <div class="confirmation">
+    <p><a href="../index.php" style="color:#2980b9;text-decoration:underline;">&larr; Back to Home</a></p>
     <?php if ($order): ?>
         <h1>Thank you for your order!</h1>
         <p>Your order has been placed successfully.</p>

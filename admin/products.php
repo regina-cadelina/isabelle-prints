@@ -15,6 +15,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         switch ($_POST['action']) {
             case 'add_product':
                 $slug = strtolower(str_replace(' ', '-', $_POST['product_name']));
+                // Check for duplicate slug
+                $stmt = $pdo->prepare("SELECT COUNT(*) FROM products WHERE slug = ?");
+                $stmt->execute([$slug]);
+                if ($stmt->fetchColumn() > 0) {
+                    $error = "A product with this name/slug already exists. Please use a different name.";
+                    break;
+                }
                 $imageFileName = null;
                 if (isset($_FILES['product_image']) && $_FILES['product_image']['error'] === UPLOAD_ERR_OK) {
                     $ext = strtolower(pathinfo($_FILES['product_image']['name'], PATHINFO_EXTENSION));
@@ -78,7 +85,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // Get products
-$stmt = $pdo->query("SELECT p.*, c.name AS category_name FROM products p LEFT JOIN categories c ON p.category_id = c.id ORDER BY p.created_at DESC");
+$stmt = $pdo->query("SELECT p.*, c.name AS category_name FROM products p LEFT JOIN categories c ON p.category_id = c.id WHERE p.is_active = 1 ORDER BY p.created_at DESC");
 $products = $stmt->fetchAll();
 
 // Get categories for dropdown
@@ -127,6 +134,7 @@ $page_title = "Manage Products";
                 <ul>
                     <li><a href="dashboard.php"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
                     <li><a href="products.php" class="active"><i class="fas fa-box"></i> Manage Products</a></li>
+                    <li><a href="categories.php"><i class="fas fa-tags"></i> Manage Categories</a></li>
                     <li><a href="orders.php"><i class="fas fa-shopping-cart"></i> Manage Orders</a></li>
                     <li><a href="customers.php"><i class="fas fa-users"></i> Customers</a></li>
                     <li><a href="reports.php"><i class="fas fa-chart-bar"></i> Reports</a></li>
@@ -143,6 +151,10 @@ $page_title = "Manage Products";
 
                 <?php if (isset($success)): ?>
                     <div class="alert alert-success"><?php echo htmlspecialchars($success); ?></div>
+                <?php endif; ?>
+
+                <?php if (isset($error)): ?>
+                    <div class="alert alert-danger"><?php echo htmlspecialchars($error); ?></div>
                 <?php endif; ?>
 
                 <!-- Add/Edit Product Form -->

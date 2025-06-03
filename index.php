@@ -28,7 +28,7 @@ require_once 'config/database.php';
             <div class="categories-grid">
                 <?php
                 try {
-                    $stmt = $pdo->query("SELECT * FROM categories ORDER BY name LIMIT 4");
+                    $stmt = $pdo->query("SELECT * FROM categories ORDER BY name");
                     $categories = $stmt->fetchAll();
                     
                     if (count($categories) > 0) {
@@ -78,78 +78,6 @@ require_once 'config/database.php';
         </div>
     </section>
 
-    <!-- Featured Products Section -->
-    <section class="products-section">
-        <div class="container">
-            <h2>Featured Products</h2>
-            <div class="products-grid">
-                <?php
-                try {
-                    $stmt = $pdo->prepare("SELECT * FROM products WHERE featured = 1 LIMIT 8");
-                    $stmt->execute();
-                    $featuredProducts = $stmt->fetchAll();
-
-                    if (count($featuredProducts) > 0) {
-                        foreach ($featuredProducts as $product) {
-                            ?>
-                            <div class="product-card" onclick="openProductModal(<?php echo $product['id']; ?>)">
-                                <div class="product-image">
-                                    <?php if (!empty($product['image_url'])): ?>
-                                        <img src="<?php echo htmlspecialchars($product['image_url']); ?>" alt="<?php echo htmlspecialchars($product['name']); ?>">
-                                    <?php else: ?>
-                                        <div class="placeholder-image">
-                                            <i class="fas fa-image"></i>
-                                        </div>
-                                    <?php endif; ?>
-                                </div>
-                                <div class="product-info">
-                                    <div class="product-category"><?php echo htmlspecialchars($product['category_name'] ?? 'General'); ?></div>
-                                    <div class="product-name"><?php echo htmlspecialchars($product['name']); ?></div>
-                                    <div class="product-price">₱<?php echo number_format($product['base_price'], 2); ?></div>
-                                </div>
-                            </div>
-                            <?php
-                        }
-                    } else {
-                        foreach ($sampleProducts as $index => $product) {
-                            ?>
-                            <div class="product-card" onclick="openProductModal(<?php echo $index + 1; ?>)">
-                                <div class="product-image">
-                                    <div class="placeholder-image">
-                                        <i class="fas fa-image"></i>
-                                    </div>
-                                </div>
-                                <div class="product-info">
-                                    <div class="product-category"><?php echo $product['category']; ?></div>
-                                    <div class="product-name"><?php echo $product['name']; ?></div>
-                                    <div class="product-price">₱<?php echo number_format($product['price'], 2); ?></div>
-                                </div>
-                            </div>
-                            <?php
-                        }
-                    }
-                } catch (PDOException $e) {
-                    foreach ($sampleProducts as $index => $product) {
-                        ?>
-                        <div class="product-card" onclick="openProductModal(<?php echo $index + 1; ?>)">
-                            <div class="product-image">
-                                <div class="placeholder-image">
-                                    <i class="fas fa-image"></i>
-                                </div>
-                            </div>
-                            <div class="product-info">
-                                <div class="product-category"><?php echo $product['category']; ?></div>
-                                <div class="product-name"><?php echo $product['name']; ?></div>
-                                <div class="product-price">₱<?php echo number_format($product['price'], 2); ?></div>
-                            </div>
-                        </div>
-                        <?php
-                    }
-                }
-                ?>
-            </div>
-        </div>
-    </section>
 </main>
 
     <!-- Product Modal -->
