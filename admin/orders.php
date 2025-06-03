@@ -41,16 +41,41 @@ if ($search !== '') {
     $params[':search'] = "%$search%";
 }
 
-// Fetch orders with search
+// Pagination setup
+$perPage = 5;
+$page = isset($_GET['page']) && is_numeric($_GET['page']) ? (int)$_GET['page'] : 1;
+if ($page < 1) $page = 1;
+$offset = ($page - 1) * $perPage;
+
+// Count total orders for pagination (with search)
+$count_sql = "
+    SELECT COUNT(*) FROM orders o
+    LEFT JOIN users u ON o.user_id = u.id
+    " . ($search ? $search_sql : "");
+$count_stmt = $pdo->prepare($count_sql);
+if ($search) {
+    $count_stmt->execute([':search' => "%$search%"]);
+} else {
+    $count_stmt->execute();
+}
+$totalOrders = $count_stmt->fetchColumn();
+$totalPages = ceil($totalOrders / $perPage);
+
+// Fetch orders with search and pagination
 $query = "
     SELECT o.id AS order_id, o.total_amount, o.status, o.payment_status, o.created_at, u.first_name, u.last_name, u.email 
     FROM orders o 
     LEFT JOIN users u ON o.user_id = u.id 
     $search_sql
     ORDER BY o.created_at DESC
+    LIMIT $perPage OFFSET $offset
 ";
 $stmt = $pdo->prepare($query);
-$stmt->execute($params);
+if ($search) {
+    $stmt->execute($params);
+} else {
+    $stmt->execute();
+}
 $orders = $stmt->fetchAll();
 
 $page_title = "Manage Orders";
@@ -170,6 +195,17 @@ $statusOptions = ['pending', 'processing', 'shipped', 'completed', 'cancelled'];
                             </tbody>
                         </table>
                     </div>
+                </div>
+
+                <!-- Pagination Controls (place after the table, before closing tags) -->
+                <div style="margin-top:15px; text-align:center;">
+                    <?php if ($page > 1): ?>
+                        <a href="?<?php echo http_build_query(array_merge($_GET, ['page' => $page - 1])); ?>" class="btn-small" style="margin-right:10px;">&larr; Prev</a>
+                    <?php endif; ?>
+                    <span>Page <?php echo $page; ?> of <?php echo $totalPages; ?></span>
+                    <?php if ($page < $totalPages): ?>
+                        <a href="?<?php echo http_build_query(array_merge($_GET, ['page' => $page + 1])); ?>" class="btn-small" style="margin-left:10px;">Next &rarr;</a>
+                    <?php endif; ?>
                 </div>
             </div>
         </main>
