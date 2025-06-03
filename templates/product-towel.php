@@ -85,7 +85,6 @@
                     </div>
                     <!-- File Input and Upload Button -->
                     <input type="file" name="custom_file" id="custom_file" accept=".jpg,.jpeg,.png,.pdf" style="margin-right:5px;">
-                    <button type="button" onclick="uploadCustomFile()" class="btn btn-outline-primary">Upload</button>
                 </div>
             </div>
             
