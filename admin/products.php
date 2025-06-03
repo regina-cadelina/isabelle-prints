@@ -15,7 +15,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         switch ($_POST['action']) {
             case 'add_product':
                 $slug = strtolower(str_replace(' ', '-', $_POST['product_name']));
-                $stmt = $pdo->prepare("INSERT INTO products (category_id, product_name, product_slug, description, short_description, base_price, sku, stock_quantity, is_bestseller, is_new) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                $stmt = $pdo->prepare("INSERT INTO products (category_id, product_name, slug, description, short_description, base_price, sku, stock_quantity, is_bestseller, is_new) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
                 $stmt->execute([
                     $_POST['category_id'],
                     $_POST['product_name'],
