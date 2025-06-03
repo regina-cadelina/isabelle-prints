@@ -5,8 +5,11 @@ require_once '../config/database.php';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['action'])) {
         if ($_POST['action'] === 'add' && !empty($_POST['category_name'])) {
-            $stmt = $pdo->prepare("INSERT INTO categories (name) VALUES (?)");
-            $stmt->execute([trim($_POST['category_name'])]);
+            $icon = trim($_POST['icon'] ?? '');
+            $stmt = $pdo->prepare("INSERT INTO categories (name, icon) VALUES (?, ?)");
+            $stmt->execute([trim($_POST['category_name']), $icon]);
+            header("Location: categories.php");
+            exit;
         }
         if ($_POST['action'] === 'edit' && !empty($_POST['category_id']) && !empty($_POST['category_name'])) {
             $stmt = $pdo->prepare("UPDATE categories SET name = ? WHERE id = ?");
@@ -22,7 +25,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // Fetch all categories
-$stmt = $pdo->query("SELECT * FROM categories ORDER BY id DESC");
+$stmt = $pdo->query("SELECT * FROM categories ORDER BY id ASC");
 $categories = $stmt->fetchAll();
 ?>
 
@@ -40,6 +43,7 @@ $categories = $stmt->fetchAll();
         <!-- Add Category Form -->
         <form method="post" style="margin-bottom:20px;">
             <input type="text" name="category_name" placeholder="New Category Name" required>
+            <input type="text" name="icon" placeholder="Icon (optional)">
             <button type="submit" name="action" value="add">Add Category</button>
         </form>
 
@@ -66,6 +70,18 @@ $categories = $stmt->fetchAll();
                 </tr>
             <?php endforeach; ?>
         </table>
+
+        <!-- Category Cards Display -->
+        <div class="category-cards-container">
+            <?php
+            foreach ($categories as $category) {
+                echo '<div class="category-card">';
+                echo '<i class="fas fa-' . htmlspecialchars($category['icon'] ?? 'image') . '"></i>';
+                echo '<h3>' . htmlspecialchars($category['name']) . '</h3>';
+                echo '</div>';
+            }
+            ?>
+        </div>
     </div>
 </body>
 </html>

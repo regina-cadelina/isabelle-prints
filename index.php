@@ -28,7 +28,7 @@ require_once 'config/database.php';
             <div class="categories-grid">
                 <?php
                 try {
-                    $stmt = $pdo->query("SELECT * FROM categories ORDER BY name LIMIT 4");
+                    $stmt = $pdo->query("SELECT * FROM categories ORDER BY name");
                     $categories = $stmt->fetchAll();
                     
                     if (count($categories) > 0) {
