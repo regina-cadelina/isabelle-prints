@@ -1,15 +1,35 @@
 <?php
 require_once '../config/database.php';
 
+// Create FAQs table if it doesn't exist (optional safety)
+$pdo->exec("
+    CREATE TABLE IF NOT EXISTS faqs (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        question TEXT NOT NULL,
+        answer TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+");
+
 // Handle new FAQ submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['question']) && !empty($_POST['answer'])) {
-    $stmt = $pdo->prepare("INSERT INTO faqs (question, answer) VALUES (?, ?)");
-    $stmt->execute([$_POST['question'], $_POST['answer']]);
+    try {
+        $stmt = $pdo->prepare("INSERT INTO faqs (question, answer) VALUES (?, ?)");
+        $stmt->execute([$_POST['question'], $_POST['answer']]);
+        header("Location: faqs.php"); // Redirect to prevent form resubmission
+        exit;
+    } catch (PDOException $e) {
+        die("Error adding FAQ: " . $e->getMessage());
+    }
 }
 
 // Fetch all FAQs
-$stmt = $pdo->query("SELECT * FROM faqs ORDER BY id DESC");
-$faqs = $stmt->fetchAll();
+try {
+    $stmt = $pdo->query("SELECT * FROM faqs ORDER BY id DESC");
+    $faqs = $stmt->fetchAll();
+} catch (PDOException $e) {
+    die("Error fetching FAQs: " . $e->getMessage());
+}
 
 $page_title = "Manage FAQs";
 ?>
@@ -18,14 +38,16 @@ $page_title = "Manage FAQs";
 <head>
     <meta charset="UTF-8">
     <title><?php echo $page_title; ?></title>
-    <link rel="stylesheet" href="../assets/css/style.css">
-    <link rel="stylesheet" href="../assets/css/admin.css">
+    <link rel="stylesheet" href="../assets//css/style.css">
+    <link rel="stylesheet" href="../assets//css/admin.css">
 </head>
 <body class="admin-body">
     <div class="admin-container">
         <main class="admin-main">
             <div class="admin-content">
                 <h1>FAQs</h1>
+
+                <!-- Form to add a new FAQ -->
                 <form method="post" class="admin-form" style="margin-bottom:30px;">
                     <h2>Add New FAQ</h2>
                     <label>Question:<br>
@@ -36,6 +58,8 @@ $page_title = "Manage FAQs";
                     </label><br><br>
                     <button type="submit" class="btn-small">Add FAQ</button>
                 </form>
+
+                <!-- Display all FAQs -->
                 <h2>All FAQs</h2>
                 <table class="admin-table">
                     <thead>
@@ -46,13 +70,17 @@ $page_title = "Manage FAQs";
                         </tr>
                     </thead>
                     <tbody>
-                        <?php foreach ($faqs as $faq): ?>
-                        <tr>
-                            <td><?php echo $faq['id']; ?></td>
-                            <td><?php echo htmlspecialchars($faq['question']); ?></td>
-                            <td><?php echo nl2br(htmlspecialchars($faq['answer'])); ?></td>
-                        </tr>
-                        <?php endforeach; ?>
+                        <?php if (count($faqs) > 0): ?>
+                            <?php foreach ($faqs as $faq): ?>
+                                <tr>
+                                    <td><?php echo htmlspecialchars($faq['id']); ?></td>
+                                    <td><?php echo nl2br(htmlspecialchars($faq['question'])); ?></td>
+                                    <td><?php echo nl2br(htmlspecialchars($faq['answer'])); ?></td>
+                                </tr>
+                            <?php endforeach; ?>
+                        <?php else: ?>
+                            <tr><td colspan="3">No FAQs found.</td></tr>
+                        <?php endif; ?>
                     </tbody>
                 </table>
             </div>
@@ -60,9 +88,3 @@ $page_title = "Manage FAQs";
     </div>
 </body>
 </html>
-
-CREATE TABLE faqs (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    question TEXT NOT NULL,
-    answer TEXT NOT NULL
-);
