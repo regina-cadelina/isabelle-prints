@@ -1,16 +1,22 @@
 <div class="product-modal-content">
     <div class="product-modal-image">
         <?php if ($product['image_url']): ?>
-            <img src="<?php echo htmlspecialchars($product['image_url']); ?>" alt="<?php echo htmlspecialchars($product['name']); ?>">
+            <img src="uploads/products/<?php echo htmlspecialchars($product['image_url']); ?>" alt="<?php echo htmlspecialchars($product['name']); ?>">
         <?php else: ?>
             <div class="placeholder-image">
-                <i class="fas fa-glass-water"></i>
+                <i class="fas fa-image"></i>
             </div>
         <?php endif; ?>
     </div>
     
     <div class="product-modal-details">
-        <h2><?php echo htmlspecialchars($product['name']); ?></h2>
+        <h2>
+            <?php echo htmlspecialchars($product['product_name'] ?? $product['name']); ?>
+        </h2>
+        <div class="product-stock" style="margin-bottom:10px;">
+            <strong>Available Stock:</strong>
+            <?php echo isset($product['stock_quantity']) ? (int)$product['stock_quantity'] : 'N/A'; ?>
+        </div>
         <div class="product-price">
             <?php if ($product['is_sale'] && $product['sale_price']): ?>
                 <span class="original-price"><?php echo formatPrice($product['base_price']); ?></span>
@@ -32,7 +38,7 @@
             </ul>
         </div>
         
-        <form id="addToCartForm" class="product-form">
+        <form id="addToCartForm" class="product-form" enctype="multipart/form-data">
             <input type="hidden" name="product_id" value="<?php echo $product['id']; ?>">
             
             <div class="form-group">
@@ -69,6 +75,18 @@
                 <textarea name="notes" class="form-control" placeholder="Add any special instructions for your tumbler design..."></textarea>
             </div>
             
+            <div class="form-group">
+                <label for="custom_file">Upload Custom Image:</label>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <!-- Image Preview -->
+                    <div id="customImagePreview" style="margin-right:10px;">
+                        <img id="previewImg" src="#" alt="Preview" style="display:none; max-width:60px; max-height:60px; border:1px solid #ccc; border-radius:8px;"/>
+                    </div>
+                    <!-- File Input and Upload Button -->
+                    <input type="file" name="custom_file" id="custom_file" accept=".jpg,.jpeg,.png,.pdf" style="margin-right:5px;">
+                    <button type="button" onclick="uploadCustomFile()" class="btn btn-outline-primary">Upload</button>
+                </div>
+            </div>
             <div class="form-actions">
                 <button type="button" class="btn btn-primary" onclick="addToCartModal()">ADD TO CART</button>
                 <button type="button" class="btn btn-secondary" onclick="closeModal()">VIEW DETAILS</button>
@@ -76,3 +94,56 @@
         </form>
     </div>
 </div>
+
+<script>
+document.getElementById('custom_file').addEventListener('change', function(event) {
+    const preview = document.getElementById('previewImg');
+    const file = event.target.files[0];
+    if (file && file.type.match('image.*')) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            preview.src = e.target.result;
+            preview.style.display = 'block';
+        }
+        reader.readAsDataURL(file);
+    } else {
+        preview.src = '#';
+        preview.style.display = 'none';
+    }
+});
+
+// Dummy upload handler for modal demo (replace with AJAX if needed)
+function uploadCustomFile() {
+    const fileInput = document.getElementById('custom_file');
+    if (!fileInput.files.length) {
+        alert('Please select a file to upload.');
+        return;
+    }
+    alert('File ready to upload! (Implement AJAX upload as needed)');
+}
+</script>
+
+<?php
+// Handle the form submission for adding to cart
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['product_id'])) {
+    $productId = $_POST['product_id'];
+    $size = $_POST['size'];
+    $color = $_POST['color'];
+    $quantity = $_POST['quantity'];
+    $notes = $_POST['notes'];
+    $imageFileName = null;
+
+    // Handle file upload if a custom file is provided
+    if (isset($_FILES['custom_file']) && $_FILES['custom_file']['error'] === UPLOAD_ERR_OK) {
+        $uploadDir = __DIR__ . '/../uploads/products/';
+        $imageFileName = uniqid('product_', true) . '.' . pathinfo($_FILES['custom_file']['name'], PATHINFO_EXTENSION);
+        move_uploaded_file($_FILES['custom_file']['tmp_name'], $uploadDir . $imageFileName);
+    }
+
+    // Add the product to the cart (implement your cart logic here)
+    // Example: Cart::add($productId, $size, $color, $quantity, $notes, $imageFileName);
+
+    // For demo, just show an alert
+    echo '<script>alert("Product added to cart! (ID: ' . $productId . ', Size: ' . $size . ', Color: ' . $color . ', Quantity: ' . $quantity . ', Notes: ' . $notes . ', Image: ' . $imageFileName . ')");</script>';
+}
+?>

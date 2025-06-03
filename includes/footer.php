@@ -16,7 +16,6 @@
                         <li><a href="/isabelle-prints/">Home</a></li>
                         <li><a href="/isabelle-prints/pages/products.php">Products</a></li>
                         <li><a href="/isabelle-prints/pages/faqs.php">FAQs</a></li>
-                        <li><a href="/isabelle-prints/pages/about.php">About Us</a></li>
                     </ul>
                 </div>
                 

@@ -20,15 +20,15 @@ $authCode = $_GET['code'];
 try {
     // Exchange authorization code for access token
     $tokenData = [
-        'client_id' => '23042345108-l7dg6vqrr1jnb83efue17ojemldlvnar.apps.googleusercontent.com',
-        'client_secret' => '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',
+        'client_id' => GOOGLE_CLIENT_ID,
+        'client_secret' => GOOGLE_CLIENT_SECRET,
         'code' => $authCode,
         'grant_type' => 'authorization_code',
-        'redirect_uri' => 'http://localhost/isabelle-prints/auth/google-callback.php'
+        'redirect_uri' => GOOGLE_REDIRECT_URI
     ];
 
     $ch = curl_init();
-    curl_setopt($ch, CURLOPT_URL, 'https://oauth2.googleapis.com/token');
+    curl_setopt($ch, CURLOPT_URL, GOOGLE_TOKEN_URL);
     curl_setopt($ch, CURLOPT_POST, true);
     curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($tokenData));
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
@@ -56,9 +56,9 @@ try {
         throw new Exception('No access token received. Response: ' . $response);
     }
 
-    // Get user information from Google
+    // Get user information from Google - FIXED: Using correct URL
     $ch = curl_init();
-    curl_setopt($ch, CURLOPT_URL, 'https://oauth2.googleapis.com/token');
+    curl_setopt($ch, CURLOPT_URL, 'https://www.googleapis.com/oauth2/v3/userinfo');
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false); // For localhost testing
     curl_setopt($ch, CURLOPT_HTTPHEADER, [
@@ -85,46 +85,57 @@ try {
     }
 
     // Check if user exists in database
-    $stmt = $pdo->prepare("SELECT id, email, first_name, last_name, google_id FROM users WHERE email = ? OR google_id = ?");
-    $stmt->execute([$userInfo['email'], $userInfo['id']]);
+    $stmt = $pdo->prepare("SELECT id, email, first_name, last_name, user_type FROM users WHERE email = ? OR google_id = ?");
+    $stmt->execute([$userInfo['email'], $userInfo['sub']]);  // FIXED: Google uses 'sub' as the ID
     $existingUser = $stmt->fetch();
 
     if ($existingUser) {
         // Update Google ID if not set
         if (empty($existingUser['google_id'])) {
             $updateStmt = $pdo->prepare("UPDATE users SET google_id = ? WHERE id = ?");
-            $updateStmt->execute([$userInfo['id'], $existingUser['id']]);
+            $updateStmt->execute([$userInfo['sub'], $existingUser['id']]);
         }
         
         $userId = $existingUser['id'];
-        $userName = trim($existingUser['first_name'] . ' ' . $existingUser['last_name']);
+        $firstName = $existingUser['first_name'];
+        $lastName = $existingUser['last_name'];
+        $userEmail = $existingUser['email'];
+        $userType = $existingUser['user_type'] ?? 'customer';
     } else {
         // Create new user
         $firstName = $userInfo['given_name'] ?? '';
         $lastName = $userInfo['family_name'] ?? '';
-        $email = $userInfo['email'];
-        $googleId = $userInfo['id'];
+        $userEmail = $userInfo['email'];
+        $googleId = $userInfo['sub'];  // FIXED: Google uses 'sub' as the ID
 
-        $stmt = $pdo->prepare("INSERT INTO users (first_name, last_name, email, google_id, created_at) VALUES (?, ?, ?, ?, NOW())");
-        $stmt->execute([$firstName, $lastName, $email, $googleId]);
+        $stmt = $pdo->prepare("INSERT INTO users (first_name, last_name, email, google_id, user_type, is_active, created_at) VALUES (?, ?, ?, ?, 'customer', 1, NOW())");
+        $stmt->execute([$firstName, $lastName, $userEmail, $googleId]);
         
         $userId = $pdo->lastInsertId();
-        $userName = trim($firstName . ' ' . $lastName);
+        $userType = 'customer';
     }
 
-    // Set session variables
+    // FIXED: Set session variables correctly to match what the rest of the app expects
     $_SESSION['user_id'] = $userId;
-    $_SESSION['user_email'] = $userInfo['email'];
-    $_SESSION['user_name'] = $userName ?: 'User';
+    $_SESSION['user_email'] = $userEmail;
+    $_SESSION['user_name'] = trim($firstName . ' ' . $lastName);
+    $_SESSION['first_name'] = $firstName;
+    $_SESSION['last_name'] = $lastName;
+    $_SESSION['user_type'] = $userType;
 
-    // Redirect to intended page or products
-    $redirect = $_SESSION['redirect_after_login'] ?? '/isabelle-prints/pages/products.php';
+    // Redirect based on user type
+    if ($userType === 'admin') {
+        $redirect = '/isabelle-prints/admin/dashboard.php';
+    } else {
+        $redirect = $_SESSION['redirect_after_login'] ?? '/isabelle-prints/index.php';
+    }
+
     unset($_SESSION['redirect_after_login']);
     header('Location: ' . $redirect);
     exit;
 
+
 } catch (Exception $e) {
-    // Log error and redirect to login with error message
     error_log('Google OAuth Error: ' . $e->getMessage());
     header('Location: /isabelle-prints/pages/login.php?error=' . urlencode('Google login failed: ' . $e->getMessage()));
     exit;
