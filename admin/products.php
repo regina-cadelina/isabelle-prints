@@ -84,8 +84,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// Get products
-$stmt = $pdo->query("SELECT p.*, c.name AS category_name FROM products p LEFT JOIN categories c ON p.category_id = c.id WHERE p.is_active = 1 ORDER BY p.created_at DESC");
+// Handle search
+$search = trim($_GET['search'] ?? '');
+$search_sql = '';
+$params = [];
+if ($search !== '') {
+    $search_sql = "AND (p.product_name LIKE :search OR p.sku LIKE :search OR c.name LIKE :search)";
+    $params[':search'] = "%$search%";
+}
+
+// Get products with search
+$stmt = $pdo->prepare("
+    SELECT p.*, c.name AS category_name 
+    FROM products p 
+    LEFT JOIN categories c ON p.category_id = c.id 
+    WHERE p.is_active = 1 $search_sql
+    ORDER BY p.created_at DESC
+");
+if ($params) {
+    $stmt->execute($params);
+} else {
+    $stmt->execute();
+}
 $products = $stmt->fetchAll();
 
 // Get categories for dropdown
@@ -256,6 +276,13 @@ $page_title = "Manage Products";
                 <!-- Products List -->
                 <div class="admin-form" style="margin-top: 30px;">
                     <h2>All Products</h2>
+                    <form method="get" style="margin-bottom:15px;display:flex;gap:10px;align-items:center;">
+                        <input type="text" name="search" class="form-control" placeholder="Search by name, SKU, or category" value="<?php echo htmlspecialchars($search); ?>" style="max-width:250px;">
+                        <button type="submit" class="btn-secondary"><i class="fas fa-search"></i> Search</button>
+                        <?php if ($search): ?>
+                            <a href="products.php" class="btn-secondary" style="background:#eee;color:#333;">Clear</a>
+                        <?php endif; ?>
+                    </form>
                     <div class="table-container">
                         <table class="admin-table">
                             <thead>
