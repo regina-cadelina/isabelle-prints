@@ -62,25 +62,6 @@ try {
 } catch (PDOException $e) {
     $products = [];
 }
-
-// If no products from database, use sample data
-if (empty($products)) {
-    $sampleProducts = [
-        ['id' => 1, 'name' => 'Premium Business Cards', 'base_price' => 500, 'category_name' => 'Business Cards', 'image_url' => ''],
-        ['id' => 2, 'name' => 'Custom Poster Print', 'base_price' => 800, 'category_name' => 'Posters', 'image_url' => ''],
-        ['id' => 3, 'name' => 'Magazine Printing', 'base_price' => 1200, 'category_name' => 'Magazines', 'image_url' => ''],
-        ['id' => 4, 'name' => 'Banner Design', 'base_price' => 1500, 'category_name' => 'Banners', 'image_url' => ''],
-        ['id' => 5, 'name' => 'Brochure Printing', 'base_price' => 600, 'category_name' => 'Brochures', 'image_url' => ''],
-        ['id' => 6, 'name' => 'Custom T-Shirt', 'base_price' => 750, 'category_name' => 'Apparel', 'image_url' => ''],
-        ['id' => 7, 'name' => 'Flyer Design', 'base_price' => 400, 'category_name' => 'Flyers', 'image_url' => ''],
-        ['id' => 8, 'name' => 'Book Printing', 'base_price' => 2000, 'category_name' => 'Books', 'image_url' => ''],
-        ['id' => 9, 'name' => 'Sticker Printing', 'base_price' => 300, 'category_name' => 'Stickers', 'image_url' => ''],
-        ['id' => 10, 'name' => 'Calendar Design', 'base_price' => 900, 'category_name' => 'Calendars', 'image_url' => ''],
-        ['id' => 11, 'name' => 'Invitation Cards', 'base_price' => 650, 'category_name' => 'Invitations', 'image_url' => ''],
-        ['id' => 12, 'name' => 'Menu Printing', 'base_price' => 550, 'category_name' => 'Menus', 'image_url' => '']
-    ];
-    $products = $sampleProducts;
-}
 ?>
 
 <main class="products-page">
