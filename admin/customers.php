@@ -65,6 +65,7 @@ $page_title = "Customers";
             <ul>
                 <li><a href="dashboard.php"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
                 <li><a href="products.php"><i class="fas fa-box"></i> Manage Products</a></li>
+                <li><a href="categories.php"><i class="fas fa-tags"></i> Manage Categories</a></li>
                 <li><a href="orders.php"><i class="fas fa-shopping-cart"></i> Manage Orders</a></li>
                 <li><a href="customers.php" class="active"><i class="fas fa-users"></i> Customers</a></li>
                 <li><a href="reports.php"><i class="fas fa-chart-bar"></i> Reports</a></li>
