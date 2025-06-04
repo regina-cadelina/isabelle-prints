@@ -36,6 +36,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $bankName = trim($_POST['bank_name'] ?? '');
     $phone = trim($_POST['phone'] ?? '');
 
+    // Validate required fields
     if (empty($shippingAddress)) {
         $error = 'Shipping address is required.';
     } elseif (empty($billingAddress)) {
@@ -171,6 +172,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $updateStockStmt->execute([$quantity, $item['product']['id']]);
             }
 
+            // Clear cart function or fallback
             if (function_exists('clearCart')) {
                 clearCart($pdo, $_SESSION['user_id']);
             } else {
@@ -178,12 +180,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
 
             $pdo->commit();
+
             header('Location: order_confirmation.php?order_id=' . $orderId);
             exit();
+
         } catch (PDOException $e) {
             $pdo->rollBack();
-            $error = 'An error occurred while processing your order.';
-            error_log("Checkout Error: " . $e->getMessage());
+            $error = 'An error occurred while processing your order. Please try again.';
+            // Log the error for debugging:
+            error_log('Checkout Error: ' . $e->getMessage());
         }
     }
 }
@@ -192,11 +197,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
+    <meta charset="UTF-8" />
     <title>Checkout - Isabelle Concept & Prints</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
-    <link rel="stylesheet" href="../assets/css/style.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="../assets/css/style.css" rel="stylesheet" />
 </head>
 <body>
 
@@ -246,7 +251,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
             <div class="col-md-8 order-md-1">
                 <h4 class="mb-3">Billing Information</h4>
-                <form method="POST" enctype="multipart/form-data">
+                <form method="POST" enctype="multipart/form-data" novalidate>
                     <div class="mb-3">
                         <label for="shipping_address">Shipping Address</label>
                         <input type="text" class="form-control" id="shipping_address" name="shipping_address" required value="<?= htmlspecialchars($_POST['shipping_address'] ?? '') ?>">
@@ -263,8 +268,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <h4 class="mb-3">Payment Information</h4>
 
                     <div class="mb-3">
+<<<<<<< HEAD
                         <label for="payment_proof_file">Payment Proof (JPG, PNG, PDF)</label>
                         <input type="file" class="form-control" id="payment_proof_file" name="payment_proof_file" accept=".jpg, .jpeg, .png, .pdf" required>
+=======
+                        <label for="payment_proof">Payment Proof (JPG, PNG, PDF)</label>
+                        <input type="file" class="form-control" id="payment_proof" name="payment_proof" accept=".jpg,.jpeg,.png,.pdf" required>
+>>>>>>> 903e1ee3e69c4305fa48629f1f32faf6e63c973e
                     </div>
                     <div class="mb-3">
                         <label for="reference_number">Reference Number</label>
@@ -290,7 +300,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <?php include('../includes/footer.php'); ?>
 
 <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.3/dist/umd/popper.min.js"></script>
-<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
