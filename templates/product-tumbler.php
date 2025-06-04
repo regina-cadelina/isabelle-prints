@@ -111,7 +111,6 @@
 </div>
             <div class="form-actions">
                 <button type="button" class="btn btn-primary" onclick="addToCartModal()">ADD TO CART</button>
-                <button type="button" class="btn btn-secondary" onclick="closeModal()">VIEW DETAILS</button>
             </div>
         </form>
     </div>

@@ -15,8 +15,8 @@ require_once 'config/database.php';
     <!-- Hero Section -->
     <section class="hero">
         <div class="container">
-            <h1>Premium Quality Printing Solutions</h1>
-            <p>Bringing your ideas to life with exceptional printing services</p>
+            <h1>Isabelle Concept & Prints</h1>
+            <p>We Create What You Imagine!</p>
             <a href="/isabelle-prints/pages/products.php" class="btn btn-primary">Explore Collection</a>
         </div>
     </section>

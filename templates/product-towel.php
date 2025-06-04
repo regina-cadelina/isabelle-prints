@@ -95,7 +95,6 @@
                     <?php if (empty($product['stock_quantity']) || $product['stock_quantity'] <= 0) echo 'disabled style="opacity:0.5;cursor:not-allowed;"'; ?>>
                     ADD TO CART
                 </button>
-                <button type="button" class="btn btn-secondary" onclick="closeModal()">VIEW DETAILS</button>
             </div>
         </form>
         

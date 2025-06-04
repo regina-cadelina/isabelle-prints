@@ -105,10 +105,6 @@ $orders = $stmt->fetchAll();
                                     <span>Downpayment Paid:</span>
                                     <span><?php echo formatPrice($order['downpayment_amount']); ?></span>
                                 </div>
-                                <div class="amount-row remaining">
-                                    <span>Remaining Balance:</span>
-                                    <span><?php echo formatPrice($order['total_amount'] - $order['downpayment_amount']); ?></span>
-                                </div>
                             </div>
                         </div>
                         <div class="order-actions">
@@ -134,12 +130,29 @@ $orders = $stmt->fetchAll();
 <!-- Order Details Modal -->
 <div id="orderModal" class="modal">
     <div class="modal-content">
-        <span class="close">&times;</span>
+        <span class="close close-order-modal">&times;</span>
         <div id="orderModalContent">
             <!-- Content will be loaded via AJAX -->
         </div>
     </div>
 </div>
+
+<!-- If you don't have existing CSS for the .close class, add this style block before the script tag -->
+<style>
+.modal .close, .modal .close-order-modal {
+    position: absolute;
+    top: 15px;
+    right: 20px;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+    color: #555;
+}
+
+.modal .close:hover, .modal .close-order-modal:hover {
+    color: #000;
+}
+</style>
 
 <script>
 function viewOrderDetails(orderNumber) {
@@ -158,20 +171,36 @@ function viewOrderDetails(orderNumber) {
         });
 }
 
-// Close modal functionality
+function closeOrderModal() {
+    const modal = document.getElementById('orderModal');
+    modal.style.display = 'none';
+}
+
+// Close modal functionality - Fixed version
 document.addEventListener('DOMContentLoaded', function() {
     const modal = document.getElementById('orderModal');
-    const closeBtn = document.querySelector('.close');
+    const closeBtn = document.querySelector('.close-order-modal');
+    
+    // Close button click
     if (closeBtn) {
-        closeBtn.onclick = function() {
-            modal.style.display = 'none';
-        }
+        closeBtn.addEventListener('click', function() {
+            closeOrderModal();
+        });
     }
-    window.onclick = function(event) {
-        if (event.target == modal) {
-            modal.style.display = 'none';
+    
+    // Click outside modal to close
+    window.addEventListener('click', function(event) {
+        if (event.target === modal) {
+            closeOrderModal();
         }
-    }
+    });
+    
+    // ESC key to close
+    document.addEventListener('keydown', function(event) {
+        if (event.key === 'Escape' && modal.style.display === 'block') {
+            closeOrderModal();
+        }
+    });
 });
 </script>
 
