@@ -156,8 +156,23 @@ $page_title = "Manage Categories";
                             </div>
                             <div class="form-group">
                                 <label for="image">Category Image</label>
-                                <input type="file" id="image" name="image" class="form-control" accept="image/*">
-                                <small style="color: #7f8c8d; font-size: 0.85rem;">Optional. Upload a category image (jpg, png, etc.)</small>
+                                <div class="file-upload-wrapper">
+                                    <input type="file" id="image" name="image" class="form-control" accept="image/*">
+                                    <small style="display:block;margin-top:5px;color:#666;">
+                                        <i class="fas fa-info-circle"></i> Recommended size: 300x300px. Supported formats: JPG, PNG, GIF
+                                    </small>
+                                </div>
+                                <div class="image-upload-tips" style="margin-top:15px;padding:10px;background:#f8f9fa;border-radius:8px;border-left:4px solid #f4c430;">
+                                    <p style="margin:0;font-size:14px;color:#555;">
+                                        <strong>Tips for good category images:</strong>
+                                    </p>
+                                    <ul style="margin:10px 0 0;padding-left:20px;font-size:13px;color:#666;">
+                                        <li>Use square images for consistent display</li>
+                                        <li>Ensure good lighting and clear visibility</li>
+                                        <li>Use simple backgrounds to make products stand out</li>
+                                        <li>Optimize image size (under 500KB) for faster loading</li>
+                                    </ul>
+                                </div>
                             </div>
                             <button type="submit" name="action" value="add" class="btn-primary">
                                 <i class="fas fa-plus"></i> Add Category
@@ -198,11 +213,18 @@ $page_title = "Manage Categories";
                                                 </td>
                                                 <td>
                                                     <?php if (!empty($cat['image_url'])): ?>
-                                                        <img src="../uploads/categories/<?php echo htmlspecialchars($cat['image_url']); ?>" alt="Category Image" style="width:40px;height:40px;object-fit:cover;border-radius:4px;margin-bottom:5px;">
+                                                        <div style="margin-bottom:10px;">
+                                                            <img src="../uploads/categories/<?php echo htmlspecialchars($cat['image_url']); ?>" alt="Category Image" style="width:100px;height:100px;object-fit:cover;border-radius:8px;box-shadow:0 2px 5px rgba(0,0,0,0.1);">
+                                                        </div>
                                                     <?php else: ?>
-                                                        <span style="color:#aaa;">No image</span>
+                                                        <div style="width:100px;height:100px;background:#f8f9fa;display:flex;align-items:center;justify-content:center;border-radius:8px;margin-bottom:10px;">
+                                                            <span style="color:#aaa;"><i class="fas fa-image" style="font-size:24px;"></i></span>
+                                                        </div>
                                                     <?php endif; ?>
-                                                    <input type="file" name="image" class="form-control" accept="image/*" style="font-size: 0.8rem;">
+                                                    <div class="file-upload-wrapper" style="position:relative;margin-top:5px;">
+                                                        <input type="file" name="image" class="form-control" accept="image/*" style="font-size: 0.9rem;">
+                                                        <small style="display:block;margin-top:5px;color:#666;">Recommended size: 300x300px</small>
+                                                    </div>
                                                 </td>
                                                 <td>
                                                     <button type="submit" name="action" value="edit" class="btn-small" style="margin-right: 5px;">
@@ -264,5 +286,86 @@ $page_title = "Manage Categories";
             }
         }
     </script>
+
+    <script>
+    function toggleCategoryForm() {
+        const formBody = document.getElementById('categoryFormBody');
+        const icon = document.getElementById('formToggleIcon');
+        
+        if (formBody.style.display === 'none') {
+            formBody.style.display = 'block';
+            icon.style.transform = 'rotate(180deg)';
+        } else {
+            formBody.style.display = 'none';
+            icon.style.transform = 'rotate(0deg)';
+        }
+    }
+    
+    // Add image preview functionality
+    document.addEventListener('DOMContentLoaded', function() {
+        // For the add category form
+        const addImageInput = document.getElementById('image');
+        if (addImageInput) {
+            addImageInput.addEventListener('change', function(e) {
+                previewImage(this);
+            });
+        }
+        
+        // For all edit category forms
+        const editImageInputs = document.querySelectorAll('input[type="file"][name="image"]');
+        editImageInputs.forEach(input => {
+            input.addEventListener('change', function(e) {
+                previewImage(this);
+            });
+        });
+    });
+    
+    function previewImage(input) {
+        if (input.files && input.files[0]) {
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                // Find the closest parent row
+                const row = input.closest('tr') || input.closest('form');
+                
+                // Create or find preview container
+                let previewContainer = row.querySelector('.image-preview');
+                if (!previewContainer) {
+                    previewContainer = document.createElement('div');
+                    previewContainer.className = 'image-preview';
+                    previewContainer.style.marginTop = '10px';
+                    previewContainer.style.marginBottom = '10px';
+                    input.parentNode.insertBefore(previewContainer, input);
+                }
+                
+                // Create preview image
+                previewContainer.innerHTML = `
+                    <div style="position:relative;display:inline-block;">
+                        <img src="${e.target.result}" style="width:120px;height:120px;object-fit:cover;border-radius:8px;box-shadow:0 2px 5px rgba(0,0,0,0.1);">
+                        <div style="position:absolute;top:-8px;right:-8px;background:#fff;border-radius:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 5px rgba(0,0,0,0.2);cursor:pointer;" onclick="removePreview(this)">
+                            <i class="fas fa-times" style="font-size:12px;color:#dc3545;"></i>
+                        </div>
+                        <div style="margin-top:5px;font-size:12px;color:#28a745;">
+                            <i class="fas fa-check-circle"></i> New image selected
+                        </div>
+                    </div>
+                `;
+            }
+            
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
+    
+    function removePreview(element) {
+        const previewContainer = element.closest('.image-preview');
+        const fileInput = previewContainer.nextElementSibling;
+        
+        // Clear the file input
+        fileInput.value = '';
+        
+        // Remove the preview
+        previewContainer.remove();
+    }
+</script>
 </body>
 </html>
