@@ -118,7 +118,11 @@ $cartTotals = calculateCartTotal($pdo);
                     <?php foreach ($cartItems as $item): ?>
                         <div class="cart-item">
                             <div class="item-image">
-                                <i class="fas fa-image"></i>
+                                <?php if (!empty($item['product']['image_url'])): ?>
+                                    <img src="../uploads/products/<?php echo htmlspecialchars($item['product']['image_url']); ?>" alt="<?php echo htmlspecialchars($item['product']['name']); ?>">
+                                <?php else: ?>
+                                    <i class="fas fa-image"></i>
+                                <?php endif; ?>
                             </div>
                             
                             <div class="item-details">
@@ -205,3 +209,25 @@ function changeQuantity(btn, delta) {
     form.querySelector('button[type="submit"]').click();
 }
 </script>
+
+<style>
+/* Limit cart item image size and contain it in the box */
+.cart-item .item-image img {
+    max-width: 80px;
+    max-height: 80px;
+    object-fit: contain;
+    display: block;
+    margin: 0 auto;
+}
+.cart-item .item-image {
+    width: 90px;
+    height: 90px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #fff;
+    border: 1px solid #eee;
+    border-radius: 8px;
+    overflow: hidden;
+}
+</style>

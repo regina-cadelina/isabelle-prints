@@ -37,14 +37,20 @@ $stmt = $pdo->query("
 ");
 $recent_orders = $stmt->fetchAll();
 
-// Low stock products (stock < 10, show up to 5)
+// Low stock products (stock < 10, show all)
 $stmt = $pdo->query("
-    SELECT p.id as product_id, p.name as product_name, p.base_price, p.status, p.is_bestseller, p.is_new, 
-           IFNULL(p.stock_quantity, 0) as stock_quantity
+    SELECT 
+        p.id as product_id,
+        p.product_name,
+        p.sku,
+        p.base_price,
+        p.stock_quantity,
+        c.name AS category_name
     FROM products p
-    WHERE IFNULL(p.stock_quantity, 0) < 10 AND p.status = 'active'
+    LEFT JOIN categories c ON p.category_id = c.id
+    WHERE p.is_active = 1
+      AND p.stock_quantity < 10
     ORDER BY p.stock_quantity ASC
-    LIMIT 5
 ");
 $low_stock = $stmt->fetchAll();
 
@@ -178,19 +184,35 @@ $page_title = "Admin Dashboard";
                             <table class="admin-table">
                                 <thead>
                                     <tr>
-                                        <th>Product</th>
+                                        <th>Product Name</th>
+                                        <th>Category</th>
+                                        <th>SKU</th>
+                                        <th>Price</th>
                                         <th>Stock</th>
                                         <th>Action</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <?php foreach ($low_stock as $product): ?>
-                                    <tr>
-                                        <td><?php echo htmlspecialchars($product['product_name']); ?></td>
-                                        <td><span class="stock-low"><?php echo $product['stock_quantity']; ?></span></td>
-                                        <td><a href="products.php?edit=<?php echo $product['product_id']; ?>" class="btn-small">Update</a></td>
-                                    </tr>
-                                    <?php endforeach; ?>
+                                    <?php if (empty($low_stock)): ?>
+                                        <tr>
+                                            <td colspan="6" style="text-align:center;">No low stock products.</td>
+                                        </tr>
+                                    <?php else: ?>
+                                        <?php foreach ($low_stock as $product): ?>
+                                        <tr>
+                                            <td><?php echo htmlspecialchars($product['product_name']); ?></td>
+                                            <td><?php echo htmlspecialchars($product['category_name']); ?></td>
+                                            <td><?php echo htmlspecialchars($product['sku']); ?></td>
+                                            <td>₱<?php echo number_format($product['base_price'], 2); ?></td>
+                                            <td>
+                                                <span class="stock-low"><?php echo (int)$product['stock_quantity']; ?></span>
+                                            </td>
+                                            <td>
+                                                <a href="products.php?edit=<?php echo $product['product_id']; ?>" class="btn-small">Update</a>
+                                            </td>
+                                        </tr>
+                                        <?php endforeach; ?>
+                                    <?php endif; ?>
                                 </tbody>
                             </table>
                         </div>
@@ -200,5 +222,12 @@ $page_title = "Admin Dashboard";
             </div>
         </main>
     </div>
+
+    <?php
+    if (isset($_GET['edit'])) {
+        $product_id = (int)$_GET['edit'];
+        // Fetch product details from the database and show the edit form
+    }
+    ?>
 </body>
 </html>

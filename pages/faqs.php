@@ -17,9 +17,6 @@ include '../includes/header.php';
     <div class="container">
         <div class="page-header">
             <h1>Frequently Asked Questions</h1>
-            <nav class="breadcrumb">
-                <a href="../index.php">Home</a> / FAQs
-            </nav>
         </div>
 
         <div class="faqs-content">

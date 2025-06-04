@@ -14,10 +14,6 @@ if (isset($_SESSION['user_id'])) {
     $current_user = $stmt->fetch();
 }
 
-// Fetch all customers
-$stmt = $pdo->query("SELECT * FROM users ORDER BY id DESC");
-$customers = $stmt->fetchAll();
-
 // Handle enable/disable/delete actions
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['customer_action'], $_POST['customer_id'])) {
     $customer_id = (int)$_POST['customer_id'];
@@ -34,6 +30,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['customer_action'], $_
     header("Location: customers.php");
     exit;
 }
+
+// --- SEARCH FUNCTIONALITY ---
+$search = trim($_GET['search'] ?? '');
+$params = [];
+$search_sql = '';
+if ($search !== '') {
+    $search_sql = "WHERE (first_name LIKE :search OR last_name LIKE :search OR email LIKE :search)";
+    $params[':search'] = "%$search%";
+}
+
+// Fetch customers with search
+$stmt = $pdo->prepare("SELECT * FROM users $search_sql ORDER BY id DESC");
+$stmt->execute($params);
+$customers = $stmt->fetchAll();
 
 $page_title = "Customers";
 ?>
@@ -78,6 +88,14 @@ $page_title = "Customers";
         <main class="admin-main">
             <div class="admin-content">
                 <h1>Customers</h1>
+                <!-- Search Form -->
+                <form method="get" style="margin-bottom:15px;display:flex;gap:10px;align-items:center;">
+                    <input type="text" name="search" class="form-control" placeholder="Search by name or email" value="<?php echo htmlspecialchars($search); ?>" style="max-width:250px;">
+                    <button type="submit" class="btn-secondary"><i class="fas fa-search"></i> Search</button>
+                    <?php if ($search): ?>
+                        <a href="customers.php" class="btn-secondary" style="background:#eee;color:#333;">Clear</a>
+                    <?php endif; ?>
+                </form>
                 <div class="admin-form" style="margin-top: 30px;">
                     <table class="admin-table">
                         <thead>
