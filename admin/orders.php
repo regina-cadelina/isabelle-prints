@@ -37,7 +37,15 @@ $search = trim($_GET['search'] ?? '');
 $search_sql = '';
 $params = [];
 if ($search !== '') {
-    $search_sql = "WHERE (o.id LIKE :search OR o.status LIKE :search OR o.payment_status LIKE :search OR u.first_name LIKE :search OR u.last_name LIKE :search OR u.email LIKE :search)";
+    $search_sql = "WHERE (
+        o.id LIKE :search
+        OR o.order_number LIKE :search
+        OR o.status LIKE :search
+        OR o.payment_status LIKE :search
+        OR u.first_name LIKE :search
+        OR u.last_name LIKE :search
+        OR u.email LIKE :search
+    )";
     $params[':search'] = "%$search%";
 }
 
@@ -63,7 +71,7 @@ $totalPages = ceil($totalOrders / $perPage);
 
 // Fetch orders with search and pagination
 $query = "
-    SELECT o.id AS order_id, o.total_amount, o.status, o.payment_status, o.created_at, u.first_name, u.last_name, u.email 
+    SELECT o.id AS order_id, o.order_number, o.total_amount, o.status, o.payment_status, o.created_at, u.first_name, u.last_name, u.email 
     FROM orders o 
     LEFT JOIN users u ON o.user_id = u.id 
     $search_sql
@@ -77,6 +85,15 @@ if ($search) {
     $stmt->execute();
 }
 $orders = $stmt->fetchAll();
+
+// New query to fetch latest 5 orders for dashboard overview
+$stmt = $pdo->query("
+    SELECT o.id, o.order_number, o.status, o.total_amount, o.created_at, u.first_name, u.last_name
+    FROM orders o
+    LEFT JOIN users u ON o.user_id = u.id
+    ORDER BY o.created_at DESC
+    LIMIT 5
+");
 
 $page_title = "Manage Orders";
 $statusOptions = ['pending', 'processing', 'shipped', 'completed', 'cancelled'];
@@ -125,7 +142,7 @@ $statusOptions = ['pending', 'processing', 'shipped', 'completed', 'cancelled'];
 
                 <!-- Search Form -->
                 <form method="get" style="margin-bottom:15px;display:flex;gap:10px;align-items:center;">
-                    <input type="text" name="search" class="form-control" placeholder="Search by order #, customer, email, status..." value="<?php echo htmlspecialchars($search); ?>" style="max-width:250px;">
+                    <input type="text" name="search" class="form-control" placeholder="Search by order ID,order #, customer, email, status..." value="<?php echo htmlspecialchars($search); ?>" style="max-width:250px;">
                     <button type="submit" class="btn-secondary"><i class="fas fa-search"></i> Search</button>
                     <?php if ($search): ?>
                         <a href="orders.php" class="btn-secondary" style="background:#eee;color:#333;">Clear</a>
@@ -138,6 +155,7 @@ $statusOptions = ['pending', 'processing', 'shipped', 'completed', 'cancelled'];
                         <table class="admin-table">
                             <thead>
                                 <tr>
+                                    <th>Order ID</th>
                                     <th>Order #</th>
                                     <th>Customer</th>
                                     <th>Email</th>
@@ -152,9 +170,10 @@ $statusOptions = ['pending', 'processing', 'shipped', 'completed', 'cancelled'];
 <?php foreach ($orders as $order): ?>
 <tr>
     <td><?php echo htmlspecialchars($order['order_id']); ?></td>
+    <td>#<?php echo htmlspecialchars($order['order_number']); ?></td>
     <td><?php echo htmlspecialchars($order['first_name'] . ' ' . $order['last_name']); ?></td>
     <td><?php echo htmlspecialchars($order['email']); ?></td>
-    <td><?php echo number_format($order['total_amount'], 2); ?></td>
+    <td><?php echo formatPrice($order['total_amount'], 2); ?></td>
     <td>
         <form method="POST" style="display:inline;">
             <input type="hidden" name="action" value="update_status">

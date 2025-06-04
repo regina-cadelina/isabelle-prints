@@ -310,6 +310,7 @@ $page_title = "Manage Products";
                                 <tr>
                                     <th>Product Name</th>
                                     <th>Category</th>
+                                    <th>SKU</th> <!-- Added SKU column -->
                                     <th>Price</th>
                                     <th>Stock</th>
                                     <th>Status</th>
@@ -322,7 +323,8 @@ $page_title = "Manage Products";
                                         <tr>
                                             <td><?php echo htmlspecialchars($product['product_name'] ?? ''); ?></td>
                                             <td><?php echo htmlspecialchars($product['category_name']); ?></td>
-                                            <td>$<?php echo number_format($product['base_price'], 2); ?></td>
+                                            <td><?php echo htmlspecialchars($product['sku'] ?? ''); ?></td> <!-- Display SKU -->
+                                            <td>₱<?php echo ($product['base_price']); ?></td>
                                             <td><?php echo (int)$product['stock_quantity']; ?></td>
                                             <td>
                                                 <?php if ($product['is_bestseller']): ?>
@@ -350,7 +352,7 @@ $page_title = "Manage Products";
                                         </tr>
                                     <?php endforeach; ?>
                                 <?php else: ?>
-                                    <tr><td colspan="6" style="text-align:center;">No products found.</td></tr>
+                                    <tr><td colspan="7" style="text-align:center;">No products found.</td></tr>
                                 <?php endif; ?>
                             </tbody>
                         </table>

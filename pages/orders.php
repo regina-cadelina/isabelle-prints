@@ -49,6 +49,30 @@ $stmt = $pdo->prepare("
 ");
 $stmt->execute([$_SESSION['user_id']]);
 $orders = $stmt->fetchAll();
+
+// Get the most sold product
+$stmt = $pdo->prepare("
+    SELECT p.id, p.product_name, SUM(oi.quantity) AS total_sold
+    FROM order_items oi
+    JOIN products p ON oi.product_id = p.id
+    GROUP BY p.id
+    ORDER BY total_sold DESC
+    LIMIT 1
+");
+$stmt->execute();
+$most_sold_product = $stmt->fetch();
+
+// Get best seller product (new query)
+$stmt = $pdo->prepare("
+    SELECT p.id, p.product_name, SUM(oi.quantity) AS total_sold
+    FROM order_items oi
+    JOIN products p ON oi.product_id = p.id
+    GROUP BY p.id
+    ORDER BY total_sold DESC
+    LIMIT 1
+");
+$stmt->execute();
+$bestSeller = $stmt->fetch();
 ?>
 
 <main class="orders-page">
@@ -124,6 +148,35 @@ $orders = $stmt->fetchAll();
                 <?php endforeach; ?>
             </div>
         <?php endif; ?>
+
+        <!-- Most Sold Product Section - New Feature -->
+        <div class="most-sold-product">
+            <h2>Most Sold Product</h2>
+            <?php if ($most_sold_product): ?>
+                <div class="product-card">
+                    <h3><?php echo htmlspecialchars($most_sold_product['product_name']); ?></h3>
+                    <p>Total Sold: <?php echo (int)$most_sold_product['total_sold']; ?></p>
+                </div>
+            <?php else: ?>
+                <p>No sales data available yet.</p>
+            <?php endif; ?>
+        </div>
+
+        <!-- Best Seller Product Section - New Feature -->
+        <div class="best-seller-product">
+            <h2>Best Seller Product</h2>
+            <ul>
+                <li><strong>Best Seller Product:</strong>
+                    <?php
+                    if ($bestSeller && $bestSeller['total_sold'] > 0) {
+                        echo htmlspecialchars($bestSeller['product_name']) . " ({$bestSeller['total_sold']} sold)";
+                    } else {
+                        echo "No sales yet.";
+                    }
+                    ?>
+                </li>
+            </ul>
+        </div>
     </div>
 </main>
 

@@ -59,8 +59,11 @@ $stmt = $pdo->query("
 ");
 $ordersPerMonth = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-$page_title = "Sales Report";
+// Get inventory report (total stock per product)
+$stmt = $pdo->query("SELECT product_name, stock_quantity FROM products WHERE is_active = 1 ORDER BY product_name ASC");
+$inventory = $stmt->fetchAll(PDO::FETCH_ASSOC);
 ?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -219,29 +222,71 @@ $page_title = "Sales Report";
                     </table>
 
                     <!-- Orders Per Month Section -->
-<h2>Orders Per Month (Last 12 Months)</h2>
+<h2>Monthly Report (Last 12 Months)</h2>
 <table class="admin-table">
     <thead>
         <tr>
             <th>Month</th>
             <th>Order Count</th>
-        </tr>
-    </thead>
+            <th>Monthly Sales</th>
+            </tr>
+        </thead>
     <tbody>
         <?php if (empty($ordersPerMonth)): ?>
             <tr>
-                <td colspan="2">No orders found.</td>
+                <td colspan="3">No orders found.</td>
             </tr>
         <?php else: ?>
             <?php foreach (array_reverse($ordersPerMonth) as $row): // reverse for oldest to newest ?>
+                <?php
+                    // Calculate total sales for this month
+                    $stmt = $pdo->prepare("SELECT SUM(total_amount) AS month_sales FROM orders WHERE DATE_FORMAT(created_at, '%Y-%m') = ?");
+                    $stmt->execute([$row['month']]);
+                    $monthSales = $stmt->fetchColumn() ?: 0;
+                ?>
                 <tr>
                     <td><?php echo htmlspecialchars(date('F Y', strtotime($row['month'] . '-01'))); ?></td>
                     <td><?php echo $row['order_count']; ?></td>
+                    <td>₱<?php echo number_format($monthSales, 2); ?></td>
                 </tr>
             <?php endforeach; ?>
         <?php endif; ?>
     </tbody>
 </table>
+
+<!-- Inventory Report Section -->
+<h2>Inventory Report (Current Stocks)</h2>
+<table class="admin-table">
+    <thead>
+        <tr>
+            <th>Product Name</th>
+            <th>Current Stock</th>
+        </tr>
+    </thead>
+    <tbody>
+        <?php if (empty($inventory)): ?>
+            <tr>
+                <td colspan="2">No products found.</td>
+            </tr>
+        <?php else: ?>
+            <?php foreach ($inventory as $item): ?>
+                <tr>
+                    <td><?php echo htmlspecialchars($item['product_name']); ?></td>
+                    <td><?php echo (int)$item['stock_quantity']; ?></td>
+                </tr>
+            <?php endforeach; ?>
+        <?php endif; ?>
+    </tbody>
+</table>
+
+<!-- Total Stocks Calculation -->
+<?php
+$totalStocks = 0;
+foreach ($inventory as $item) {
+    $totalStocks += (int)$item['stock_quantity'];
+}
+?>
+<p><strong>Total Stocks (All Products):</strong> <?php echo $totalStocks; ?></p>
                 </div>
             </div>
         </main>

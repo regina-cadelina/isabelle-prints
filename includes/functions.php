@@ -8,8 +8,8 @@ function getCartItemCount() {
     return array_sum(array_column($_SESSION['cart'], 'quantity'));
 }
 
-function formatPrice($price) {
-    return '₱' . number_format($price, 2);
+function formatPrice($amount) {
+    return '₱' . number_format((float)$amount, 2);
 }
 
 function addToCart($productId, $quantity, $options = [], $notes = '') {
