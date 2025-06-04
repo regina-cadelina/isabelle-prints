@@ -126,7 +126,6 @@ document.getElementById('custom_file').addEventListener('change', function(event
 
 <?php
 $customImageFile = null;
-
 $error = null;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['custom_file']) && $_FILES['custom_file']['error'] === UPLOAD_ERR_OK) {
@@ -145,24 +144,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['custom_file']) && $_
         if (move_uploaded_file($_FILES['custom_file']['tmp_name'], $uploadPath)) {
             $customImageFile = $fileName;
 
-            // Store file name in the order_items table
+            // Store file name and customization info in the order_items table
             $productId = $_POST['product_id'];
-            $size = $_POST['size'];
-            $color = $_POST['color'];
-            $quantity = $_POST['quantity'];
-            $notes = $_POST['notes'];
+            $size = $_POST['size'] ?? null;
+            $color = $_POST['color'] ?? null;
+            $quantity = $_POST['quantity'] ?? 1;
+            $notes = $_POST['notes'] ?? null;
 
-            // Insert into order_items (example assumes mysqli)
-            $conn = new mysqli('localhost', 'your_user', 'your_pass', 'your_db');
-            if ($conn->connect_error) {
-                $error = 'Database connection failed: ' . $conn->connect_error;
-            } else {
-                $stmt = $conn->prepare("INSERT INTO order_items (product_id, size, color, quantity, notes, file_upload) VALUES (?, ?, ?, ?, ?, ?)");
-                $stmt->bind_param("ississ", $productId, $size, $color, $quantity, $notes, $customImageFile);
-                $stmt->execute();
-                $stmt->close();
-                $conn->close();
-            }
+            // Use your actual DB connection (PDO recommended)
+            require_once __DIR__ . '/../config/database.php'; // adjust path as needed
+
+            // Example: Insert into order_items (make sure these columns exist)
+            $stmt = $pdo->prepare("INSERT INTO order_items (product_id, size, color, quantity, customization_notes, file_upload) VALUES (?, ?, ?, ?, ?, ?)");
+            $stmt->execute([
+                $productId,
+                $size,
+                $color,
+                $quantity,
+                $notes,
+                $customImageFile
+            ]);
         } else {
             $error = 'Failed to upload custom file.';
         }
