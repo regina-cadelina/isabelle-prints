@@ -8,8 +8,8 @@ function getCartItemCount() {
     return array_sum(array_column($_SESSION['cart'], 'quantity'));
 }
 
-function formatPrice($amount) {
-    return '₱' . number_format((float)$amount, 2);
+function formatPrice($price) {
+    return '$' . number_format($price, 2);
 }
 
 function addToCart($productId, $quantity, $options = [], $notes = '') {
@@ -47,8 +47,9 @@ function getCartItems($pdo) {
                 'cart_key' => $cartKey,
                 'product' => $product,
                 'quantity' => $cartItem['quantity'],
-                'options' => $cartItem['options'],
-                'notes' => $cartItem['notes']
+                'options' => $cartItem['options'] ?? [],
+                'notes' => $cartItem['notes'] ?? '',
+                'selected_options' => json_encode($cartItem['options'] ?? [])
             ];
         }
     }
@@ -66,7 +67,7 @@ function calculateCartTotal($pdo) {
     }
     
     $shipping = 5.99;
-    $tax = $subtotal * 0.08; // 8% tax
+    $tax = $subtotal * 0.07; // 7% tax
     $total = $subtotal + $shipping + $tax;
     
     return [
