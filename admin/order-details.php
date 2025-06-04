@@ -13,7 +13,7 @@ $order_id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 
 // Fetch order details
 $stmt = $pdo->prepare("
-    SELECT o.*, u.first_name, u.last_name, u.email
+    SELECT o.*, u.first_name, u.last_name, u.email, u.phone
     FROM orders o
     LEFT JOIN users u ON o.user_id = u.id
     WHERE o.id = ?
