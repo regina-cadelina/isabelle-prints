@@ -218,11 +218,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <div class="mb-3">
                         <label for="phone">Phone Number</label>
 
+
                         <input type="text" class="form-control" id="phone" name="phone"
                                required pattern="^\d{11}$" maxlength="11"
                                title="Phone number must be exactly 11 digits"
                                value="<?= htmlspecialchars($_POST['phone'] ?? '') ?>"
                         <input type="text" class="form-control" id="phone" name="phone" required value="<?= htmlspecialchars($_POST['phone'] ?? '') ?>">
+
+                        <input type="text" class="form-control" id="phone" name="phone"
+                               required pattern="^\d{11}$" maxlength="11"
+                               title="Phone number must be exactly 11 digits"
+                               value="<?= htmlspecialchars($_POST['phone'] ?? '') ?>">
 
                     </div>
 
