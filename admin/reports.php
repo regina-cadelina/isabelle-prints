@@ -68,7 +68,6 @@ $inventory = $stmt->fetchAll(PDO::FETCH_ASSOC);
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title><?php echo $page_title; ?></title>
     <link rel="stylesheet" href="../assets/css/style.css">
     <link rel="stylesheet" href="../assets/css/admin.css">
 </head>
@@ -137,7 +136,6 @@ $stmt = $pdo->query("
 ");
 $ordersPerMonth = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-$page_title = "Sales Report";
 ?>
 <!DOCTYPE html>
 <html lang="en">
