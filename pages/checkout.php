@@ -53,20 +53,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $paymentProofFile = null;
 
     if (!$error) {
-        if (isset($_FILES['payment_proof']) && $_FILES['payment_proof']['error'] === UPLOAD_ERR_OK) {
+        if (isset($_FILES['payment_proof_file']) && $_FILES['payment_proof_file']['error'] === UPLOAD_ERR_OK) {
             $uploadDir = '../uploads/payment-proofs/';
             if (!is_dir($uploadDir)) {
                 mkdir($uploadDir, 0755, true);
             }
 
-            $fileExtension = strtolower(pathinfo($_FILES['payment_proof']['name'], PATHINFO_EXTENSION));
+            $fileExtension = strtolower(pathinfo($_FILES['payment_proof_file']['name'], PATHINFO_EXTENSION));
             $allowedExtensions = ['jpg', 'jpeg', 'png', 'pdf'];
 
             if (in_array($fileExtension, $allowedExtensions)) {
                 $fileName = 'payment_' . time() . '_' . uniqid() . '.' . $fileExtension;
                 $uploadPath = $uploadDir . $fileName;
 
-                if (move_uploaded_file($_FILES['payment_proof']['tmp_name'], $uploadPath)) {
+                if (move_uploaded_file($_FILES['payment_proof_file']['tmp_name'], $uploadPath)) {
                     $paymentProofFile = $fileName;
                 } else {
                     $error = 'Failed to upload payment proof file.';
@@ -97,8 +97,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 if (!empty($item['customization_notes'])) {
                     $orderCustomizationNotes[] = $item['product']['name'] . ': ' . $item['customization_notes'];
                 }
-                if (!empty($item['custom_image_file']) && !$orderCustomImage) {
-                    $orderCustomImage = $item['custom_image_file'];
+                if (!empty($item['custom_image']) && !$orderCustomImage) {
+                    $orderCustomImage = $item['custom_image'];
                 }
             }
             
@@ -139,7 +139,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 INSERT INTO order_items (
                     order_id, product_id, quantity,
                     unit_price, total_price, selected_options,
-                    customization_notes, custom_image_file,
+                    customization_notes, custom_image,
                     selected_size, selected_color, selected_finish, selected_material
                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ");
@@ -159,7 +159,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $totalPrice,
                     json_encode($options),
                     $item['customization_notes'] ?? null,
-                    $item['custom_image_file'] ?? null,
+                    $item['custom_image'] ?? null,
                     $options['size'] ?? null,
                     $options['color'] ?? null,
                     $options['finish'] ?? null,
@@ -227,7 +227,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 <?php if (!empty($item['customization_notes'])): ?>
                                     <br><small class="text-info">Custom: <?= htmlspecialchars(substr($item['customization_notes'], 0, 50)) ?>...</small>
                                 <?php endif; ?>
-                                <?php if (!empty($item['custom_image_file'])): ?>
+                                <?php if (!empty($item['custom_image'])): ?>
                                     <br><small class="text-success">Custom image uploaded</small>
                                 <?php endif; ?>
                             </div>
@@ -263,8 +263,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <h4 class="mb-3">Payment Information</h4>
 
                     <div class="mb-3">
-                        <label for="payment_proof">Payment Proof (JPG, PNG, PDF)</label>
-                        <input type="file" class="form-control" id="payment_proof" name="payment_proof" accept=".jpg, .jpeg, .png, .pdf" required>
+                        <label for="payment_proof_file">Payment Proof (JPG, PNG, PDF)</label>
+                        <input type="file" class="form-control" id="payment_proof_file" name="payment_proof_file" accept=".jpg, .jpeg, .png, .pdf" required>
                     </div>
                     <div class="mb-3">
                         <label for="reference_number">Reference Number</label>
