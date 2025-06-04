@@ -9,7 +9,7 @@ function getCartItemCount() {
 }
 
 function formatPrice($price) {
-    return '$' . number_format($price, 2);
+    return '₱' . number_format($price, 2);
 }
 
 function addToCart($productId, $quantity, $options = [], $notes = '') {
@@ -27,6 +27,27 @@ function addToCart($productId, $quantity, $options = [], $notes = '') {
             'quantity' => $quantity,
             'options' => $options,
             'notes' => $notes
+        ];
+    }
+}
+
+function addToCartWithCustomization($productId, $quantity, $options = [], $customizationNotes = '', $customImageFile = null) {
+    if (!isset($_SESSION['cart'])) {
+        $_SESSION['cart'] = [];
+    }
+    
+    $cartKey = $productId . '_' . md5(serialize($options) . $customizationNotes . $customImageFile);
+    
+    if (isset($_SESSION['cart'][$cartKey])) {
+        $_SESSION['cart'][$cartKey]['quantity'] += $quantity;
+    } else {
+        $_SESSION['cart'][$cartKey] = [
+            'product_id' => $productId,
+            'quantity' => $quantity,
+            'options' => $options,
+            'notes' => $customizationNotes,
+            'customization_notes' => $customizationNotes,
+            'custom_image_file' => $customImageFile
         ];
     }
 }
@@ -49,6 +70,8 @@ function getCartItems($pdo) {
                 'quantity' => $cartItem['quantity'],
                 'options' => $cartItem['options'] ?? [],
                 'notes' => $cartItem['notes'] ?? '',
+                'customization_notes' => $cartItem['customization_notes'] ?? '',
+                'custom_image_file' => $cartItem['custom_image_file'] ?? null,
                 'selected_options' => json_encode($cartItem['options'] ?? [])
             ];
         }

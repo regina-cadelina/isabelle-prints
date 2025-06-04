@@ -39,7 +39,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $features = array_filter(array_map('trim', explode("\n", $_POST['features'])));
                 }
                 
-                $stmt = $pdo->prepare("INSERT INTO products (category_id, product_name, name, slug, description, modal_description, short_description, base_price, sku, stock_quantity, is_bestseller, is_new, image_url, features) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                $stmt = $pdo->prepare("INSERT INTO products (category_id, product_name, name, slug, description, modal_description, short_description, base_price, sku, stock_quantity, image_url, features) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
                 $stmt->execute([
                     $_POST['category_id'],
                     $_POST['product_name'],
@@ -51,8 +51,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $_POST['base_price'],
                     $_POST['sku'] ?? '',
                     $_POST['stock_quantity'],
-                    isset($_POST['is_bestseller']) ? 1 : 0,
-                    isset($_POST['is_new']) ? 1 : 0,
                     $imageFileName,
                     json_encode($features)
                 ]);
@@ -100,7 +98,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $features = array_filter(array_map('trim', explode("\n", $_POST['features'])));
                 }
                 
-                $stmt = $pdo->prepare("UPDATE products SET category_id = ?, product_name = ?, name = ?, description = ?, modal_description = ?, short_description = ?, base_price = ?, sku = ?, stock_quantity = ?, is_bestseller = ?, is_new = ?, image_url = ?, features = ? WHERE id = ?");
+                $stmt = $pdo->prepare("UPDATE products SET category_id = ?, product_name = ?, name = ?, description = ?, modal_description = ?, short_description = ?, base_price = ?, sku = ?, stock_quantity = ?, image_url = ?, features = ? WHERE id = ?");
                 $stmt->execute([
                     $_POST['category_id'],
                     $_POST['product_name'],
@@ -111,8 +109,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $_POST['base_price'],
                     $_POST['sku'] ?? '',
                     $_POST['stock_quantity'],
-                    isset($_POST['is_bestseller']) ? 1 : 0,
-                    isset($_POST['is_new']) ? 1 : 0,
                     $imageFileName,
                     json_encode($features),
                     $_POST['product_id']
@@ -166,7 +162,7 @@ if ($search !== '') {
 }
 
 // Pagination setup
-$perPage = 5;
+$perPage = 10;
 $page = isset($_GET['page']) && is_numeric($_GET['page']) ? (int)$_GET['page'] : 1;
 if ($page < 1) $page = 1;
 $offset = ($page - 1) * $perPage;
@@ -313,248 +309,306 @@ $page_title = "Manage Products";
         <!-- Main Content -->
         <main class="admin-main">
             <div class="admin-content">
-                <h1>Manage Products</h1>
+                <h1>Product Management</h1>
 
                 <?php if (isset($success)): ?>
-                    <div class="alert alert-success"><?php echo htmlspecialchars($success); ?></div>
+                    <div class="admin-alert success" style="margin-bottom: 20px;">
+                        <i class="fas fa-check-circle"></i> <?php echo htmlspecialchars($success); ?>
+                    </div>
                 <?php endif; ?>
 
                 <?php if (isset($error)): ?>
-                    <div class="alert alert-danger"><?php echo htmlspecialchars($error); ?></div>
+                    <div class="admin-alert error" style="margin-bottom: 20px;">
+                        <i class="fas fa-exclamation-circle"></i> <?php echo htmlspecialchars($error); ?>
+                    </div>
                 <?php endif; ?>
 
                 <!-- Add/Edit Product Form -->
-                <div class="admin-form">
-                    <h2><?php echo $edit_product ? 'Edit Product' : 'Add New Product'; ?></h2>
-                    <form method="POST" enctype="multipart/form-data">
-                        <input type="hidden" name="action" value="<?php echo $edit_product ? 'update_product' : 'add_product'; ?>" />
-                        <?php if ($edit_product): ?>
-                            <input type="hidden" name="product_id" value="<?php echo (int)$edit_product['id']; ?>" />
-                        <?php endif; ?>
-
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="product_name">Product Name</label>
-                                <input type="text" id="product_name" name="product_name" class="form-control" 
-                                    value="<?php echo $edit_product ? htmlspecialchars($edit_product['product_name'] ?? '') : ''; ?>" required />
-                            </div>
-
-                            <div class="form-group">
-                                <label for="category_id">Category</label>
-                                <select id="category_id" name="category_id" class="form-control" required>
-                                    <option value="">Select Category</option>
-                                    <?php foreach ($categories as $category): ?>
-                                        <option value="<?php echo (int)$category['id']; ?>" 
-                                            <?php echo ($edit_product && $edit_product['category_id'] == $category['id']) ? 'selected' : ''; ?>>
-                                            <?php echo htmlspecialchars($category['name']); ?>
-                                        </option>
-                                    <?php endforeach; ?>
-                                </select>
-                            </div>
-
-                            <div class="form-group">
-                                <label for="stock_quantity">Stock Quantity</label>
-                                <input type="number" id="stock_quantity" name="stock_quantity" class="form-control" 
-                                    value="<?php echo $edit_product ? (int)$edit_product['stock_quantity'] : '0'; ?>" required />
-                            </div>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="short_description">Short Description</label>
-                            <input type="text" id="short_description" name="short_description" class="form-control" 
-                                value="<?php echo $edit_product ? htmlspecialchars($edit_product['short_description'] ?? '') : ''; ?>" />
-                        </div>
-
-                        <div class="form-group">
-                            <label for="description">Full Description</label>
-                            <textarea id="description" name="description" class="form-control" rows="4"><?php echo $edit_product ? htmlspecialchars($edit_product['description'] ?? '') : ''; ?></textarea>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="modal_description">Modal Description (shown in product popup)</label>
-                            <textarea id="modal_description" name="modal_description" class="form-control" rows="3"><?php echo $edit_product ? htmlspecialchars($edit_product['modal_description'] ?? '') : ''; ?></textarea>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="features">Product Features (one per line)</label>
-                            <textarea id="features" name="features" class="form-control features-textarea" rows="5" placeholder="Premium quality materials&#10;Fast turnaround time&#10;Professional design support"><?php 
-                                if ($edit_product && !empty($edit_product['features'])) {
-                                    $features = json_decode($edit_product['features'], true);
-                                    if (is_array($features)) {
-                                        echo htmlspecialchars(implode("\n", $features));
-                                    } else {
-                                        echo htmlspecialchars($edit_product['features']);
-                                    }
-                                }
-                            ?></textarea>
-                        </div>
-
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="base_price">Price (₱)</label>
-                                <input type="number" id="base_price" name="base_price" class="form-control" step="0.01" 
-                                    value="<?php echo $edit_product ? htmlspecialchars($edit_product['base_price'] ?? '') : ''; ?>" required />
-                            </div>
-
-                            <div class="form-group">
-                                <label for="sku">SKU</label>
-                                <input type="text" id="sku" name="sku" class="form-control" 
-                                    value="<?php echo $edit_product ? htmlspecialchars($edit_product['sku'] ?? '') : ''; ?>" />
-                            </div>
-                        </div>
-
-                        <div class="form-group">
-                            <label>Product Flags</label>
-                            <div class="checkbox-group">
-                                <label class="checkbox-label">
-                                    <input type="checkbox" name="is_bestseller" <?php echo ($edit_product && $edit_product['is_bestseller']) ? 'checked' : ''; ?> />
-                                    Bestseller
-                                </label>
-                                <label class="checkbox-label">
-                                    <input type="checkbox" name="is_new" <?php echo ($edit_product && $edit_product['is_new']) ? 'checked' : ''; ?> />
-                                    New Product
-                                </label>
-                            </div>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="product_image">Product Image</label>
-                            <input type="file" id="product_image" name="product_image" accept="image/*" class="form-control" />
-                            <?php if ($edit_product && $edit_product['image_url']): ?>
-                                <div style="margin-top:10px;">
-                                    <img src="../uploads/products/<?php echo htmlspecialchars($edit_product['image_url']); ?>" alt="Product Image" style="max-width:100px;">
-                                </div>
-                            <?php endif; ?>
-                        </div>
-
-                        <!-- Customization Options Section -->
-                        <div class="customization-section">
-                            <h3>Customization Options</h3>
-                            <p>Configure the options customers can choose from (sizes, colors, finishes, materials)</p>
-                            
-                            <?php 
-                            $option_types = ['size', 'color', 'finish', 'material'];
-                            foreach ($option_types as $type): 
-                            ?>
-                                <div class="option-type">
-                                    <h4><?php echo ucfirst($type); ?> Options</h4>
-                                    <div id="<?php echo $type; ?>-options">
-                                        <?php 
-                                        $existing_options = $edit_options[$type] ?? [];
-                                        if (empty($existing_options)) {
-                                            $existing_options = [null]; // Show one empty row
-                                        }
-                                        foreach ($existing_options as $index => $option): 
-                                        ?>
-                                            <div class="option-item">
-                                                <input type="text" name="customization_options[<?php echo $type; ?>][<?php echo $index; ?>][name]" 
-                                                       placeholder="Option Name (e.g., Small, Red)" 
-                                                       value="<?php echo $option ? htmlspecialchars($option['option_name']) : ''; ?>">
-                                                <input type="text" name="customization_options[<?php echo $type; ?>][<?php echo $index; ?>][value]" 
-                                                       placeholder="<?php echo $type === 'color' ? 'Color Value (e.g., #FF0000)' : 'Option Value'; ?>" 
-                                                       value="<?php echo $option ? htmlspecialchars($option['option_value']) : ''; ?>">
-                                                <input type="number" name="customization_options[<?php echo $type; ?>][<?php echo $index; ?>][price_modifier]" 
-                                                       placeholder="Price +/-" step="0.01" 
-                                                       value="<?php echo $option ? $option['price_modifier'] : '0'; ?>">
-                                                <label>
-                                                    <input type="checkbox" name="customization_options[<?php echo $type; ?>][<?php echo $index; ?>][is_default]" 
-                                                           <?php echo ($option && $option['is_default']) ? 'checked' : ''; ?>>
-                                                    Default
-                                                </label>
-                                                <button type="button" class="remove-option-btn" onclick="removeOption(this)">Remove</button>
-                                            </div>
-                                        <?php endforeach; ?>
-                                    </div>
-                                    <button type="button" class="add-option-btn" onclick="addOption('<?php echo $type; ?>')">Add <?php echo ucfirst($type); ?> Option</button>
-                                </div>
-                            <?php endforeach; ?>
-                        </div>
-
-                        <div class="form-actions">
-                            <button type="submit" class="btn-primary">
-                                <?php echo $edit_product ? 'Update Product' : 'Add Product'; ?>
-                            </button>
+                <div class="admin-card" style="margin-bottom: 30px;">
+                    <div class="admin-card-header" style="cursor: pointer;" onclick="toggleProductForm()">
+                        <i class="fas fa-plus-circle"></i> Add New Product
+                        <i class="fas fa-chevron-down" id="formToggleIcon" style="float: right; transition: transform 0.3s;"></i>
+                    </div>
+                    <div class="admin-card-body" id="productFormBody" style="display: none;">
+                        <form method="POST" enctype="multipart/form-data">
+                            <input type="hidden" name="action" value="<?php echo $edit_product ? 'update_product' : 'add_product'; ?>" />
                             <?php if ($edit_product): ?>
-                                <a href="products.php" class="btn-secondary">Cancel</a>
+                                <input type="hidden" name="product_id" value="<?php echo (int)$edit_product['id']; ?>" />
                             <?php endif; ?>
-                        </div>
-                    </form>
-                </div>
 
-                <!-- Products List -->
-                <div class="admin-form" style="margin-top: 30px;">
-                    <h2>All Products</h2>
-                    <form method="get" style="margin-bottom:15px;display:flex;gap:10px;align-items:center;">
-                        <input type="text" name="search" class="form-control" placeholder="Search by name, SKU, or category" value="<?php echo htmlspecialchars($search); ?>" style="max-width:250px;">
-                        <button type="submit" class="btn-secondary"><i class="fas fa-search"></i> Search</button>
-                        <?php if ($search): ?>
-                            <a href="products.php" class="btn-secondary" style="background:#eee;color:#333;">Clear</a>
-                        <?php endif; ?>
-                    </form>
-                    <div class="table-container">
-                        <table class="admin-table">
-                            <thead>
-                                <tr>
-                                    <th>Product Name</th>
-                                    <th>Category</th>
-                                    <th>SKU</th> <!-- Added SKU column -->
-                                    <th>Price</th>
-                                    <th>Stock</th>
-                                    <th>Status</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php if ($products): ?>
-                                    <?php foreach ($products as $product): ?>
-                                        <tr>
-                                            <td><?php echo htmlspecialchars($product['product_name'] ?? ''); ?></td>
-                                            <td><?php echo htmlspecialchars($product['category_name']); ?></td>
-                                            <td>$<?php echo number_format($product['base_price'], 2); ?></td>
-                                            <td><?php echo (int)$product['stock_quantity']; ?></td>
-                                            <td>
-                                                <?php if ($product['is_bestseller']): ?>
-                                                    <span class="label label-success">Bestseller</span>
-                                                <?php endif; ?>
-                                                <?php if ($product['is_new']): ?>
-                                                    <span class="label label-info">New</span>
-                                                <?php endif; ?>
-                                                <?php if (!$product['is_bestseller'] && !$product['is_new']): ?>
-                                                    <span class="label label-default">Normal</span>
-                                                <?php endif; ?>
-                                            </td>
-                                            <td>
-                                                <a href="products.php?edit=<?php echo (int)$product['id']; ?>" class="btn-action btn-edit" title="Edit">
-                                                    <i class="fas fa-edit"></i>
-                                                </a>
-                                                <form method="POST" style="display:inline;" onsubmit="return confirm('Are you sure you want to delete this product?');">
-                                                    <input type="hidden" name="action" value="delete_product" />
-                                                    <input type="hidden" name="product_id" value="<?php echo (int)$product['id']; ?>" />
-                                                    <button type="submit" class="btn-action btn-delete" title="Delete">
-                                                        <i class="fas fa-trash-alt"></i>
-                                                    </button>
-                                                </form>
-                                            </td>
-                                        </tr>
-                                    <?php endforeach; ?>
-                                <?php else: ?>
-                                    <tr><td colspan="7" style="text-align:center;">No products found.</td></tr>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="product_name">Product Name</label>
+                                    <input type="text" id="product_name" name="product_name" class="form-control" 
+                                        value="<?php echo $edit_product ? htmlspecialchars($edit_product['product_name'] ?? '') : ''; ?>" required />
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="category_id">Category</label>
+                                    <select id="category_id" name="category_id" class="form-control" required>
+                                        <option value="">Select Category</option>
+                                        <?php foreach ($categories as $category): ?>
+                                            <option value="<?php echo (int)$category['id']; ?>" 
+                                                <?php echo ($edit_product && $edit_product['category_id'] == $category['id']) ? 'selected' : ''; ?>>
+                                                <?php echo htmlspecialchars($category['name']); ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="stock_quantity">Stock Quantity</label>
+                                    <input type="number" id="stock_quantity" name="stock_quantity" class="form-control" 
+                                        value="<?php echo $edit_product ? (int)$edit_product['stock_quantity'] : '0'; ?>" required />
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="short_description">Short Description</label>
+                                <input type="text" id="short_description" name="short_description" class="form-control" 
+                                    value="<?php echo $edit_product ? htmlspecialchars($edit_product['short_description'] ?? '') : ''; ?>" />
+                            </div>
+
+                            <div class="form-group">
+                                <label for="description">Full Description</label>
+                                <textarea id="description" name="description" class="form-control" rows="4"><?php echo $edit_product ? htmlspecialchars($edit_product['description'] ?? '') : ''; ?></textarea>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="modal_description">Modal Description (shown in product popup)</label>
+                                <textarea id="modal_description" name="modal_description" class="form-control" rows="3"><?php echo $edit_product ? htmlspecialchars($edit_product['modal_description'] ?? '') : ''; ?></textarea>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="features">Product Features (one per line)</label>
+                                <textarea id="features" name="features" class="form-control features-textarea" rows="5" placeholder="Premium quality materials&#10;Fast turnaround time&#10;Professional design support"><?php 
+                                    if ($edit_product && !empty($edit_product['features'])) {
+                                        $features = json_decode($edit_product['features'], true);
+                                        if (is_array($features)) {
+                                            echo htmlspecialchars(implode("\n", $features));
+                                        } else {
+                                            echo htmlspecialchars($edit_product['features']);
+                                        }
+                                    }
+                                ?></textarea>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="base_price">Price (₱)</label>
+                                    <input type="number" id="base_price" name="base_price" class="form-control" step="0.01" 
+                                        value="<?php echo $edit_product ? htmlspecialchars($edit_product['base_price'] ?? '') : ''; ?>" required />
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="sku">SKU</label>
+                                    <input type="text" id="sku" name="sku" class="form-control" 
+                                        value="<?php echo $edit_product ? htmlspecialchars($edit_product['sku'] ?? '') : ''; ?>" />
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="product_image">Product Image</label>
+                                <input type="file" id="product_image" name="product_image" accept="image/*" class="form-control" />
+                                <?php if ($edit_product && $edit_product['image_url']): ?>
+                                    <div style="margin-top:10px;">
+                                        <img src="../uploads/products/<?php echo htmlspecialchars($edit_product['image_url']); ?>" alt="Product Image" style="max-width:100px; border-radius: 4px;">
+                                    </div>
                                 <?php endif; ?>
-                            </tbody>
-                        </table>
-                        <!-- Pagination Controls -->
-                        <div style="margin-top:15px; text-align:center;">
-                            <?php if ($page > 1): ?>
-                                <a href="?<?php echo http_build_query(array_merge($_GET, ['page' => $page - 1])); ?>" class="btn-small" style="margin-right:10px;">&larr; Prev</a>
-                            <?php endif; ?>
-                            <span>Page <?php echo $page; ?> of <?php echo $totalPages; ?></span>
-                            <?php if ($page < $totalPages): ?>
-                                <a href="?<?php echo http_build_query(array_merge($_GET, ['page' => $page + 1])); ?>" class="btn-small" style="margin-left:10px;">Next &rarr;</a>
-                            <?php endif; ?>
-                        </div>
+                            </div>
+
+                            <!-- Customization Options Section -->
+                            <div class="customization-section">
+                                <h3>Customization Options</h3>
+                                <p>Configure the options customers can choose from (sizes, colors, finishes, materials)</p>
+                                
+                                <?php 
+                                $option_types = ['size', 'color', 'finish', 'material'];
+                                foreach ($option_types as $type): 
+                                ?>
+                                    <div class="option-type">
+                                        <h4><?php echo ucfirst($type); ?> Options</h4>
+                                        <div id="<?php echo $type; ?>-options">
+                                            <?php 
+                                            $existing_options = $edit_options[$type] ?? [];
+                                            if (empty($existing_options)) {
+                                                $existing_options = [null]; // Show one empty row
+                                            }
+                                            foreach ($existing_options as $index => $option): 
+                                            ?>
+                                                <div class="option-item">
+                                                    <input type="text" name="customization_options[<?php echo $type; ?>][<?php echo $index; ?>][name]" 
+                                                           placeholder="Option Name (e.g., Small, Red)" 
+                                                           value="<?php echo $option ? htmlspecialchars($option['option_name']) : ''; ?>">
+                                                    <input type="text" name="customization_options[<?php echo $type; ?>][<?php echo $index; ?>][value]" 
+                                                           placeholder="<?php echo $type === 'color' ? 'Color Value (e.g., #FF0000)' : 'Option Value'; ?>" 
+                                                           value="<?php echo $option ? htmlspecialchars($option['option_value']) : ''; ?>">
+                                                    <input type="number" name="customization_options[<?php echo $type; ?>][<?php echo $index; ?>][price_modifier]" 
+                                                           placeholder="Price +/-" step="0.01" 
+                                                           value="<?php echo $option ? $option['price_modifier'] : '0'; ?>">
+                                                    <label>
+                                                        <input type="checkbox" name="customization_options[<?php echo $type; ?>][<?php echo $index; ?>][is_default]" 
+                                                               <?php echo ($option && $option['is_default']) ? 'checked' : ''; ?>>
+                                                        Default
+                                                    </label>
+                                                    <button type="button" class="remove-option-btn" onclick="removeOption(this)">Remove</button>
+                                                </div>
+                                            <?php endforeach; ?>
+                                        </div>
+                                        <button type="button" class="add-option-btn" onclick="addOption('<?php echo $type; ?>')">Add <?php echo ucfirst($type); ?> Option</button>
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
+
+                            <div class="form-actions">
+                                <button type="submit" class="btn-primary">
+                                    <i class="fas fa-<?php echo $edit_product ? 'save' : 'plus'; ?>"></i>
+                                    <?php echo $edit_product ? 'Update Product' : 'Add Product'; ?>
+                                </button>
+                                <?php if ($edit_product): ?>
+                                    <a href="products.php" class="btn-secondary">
+                                        <i class="fas fa-times"></i> Cancel
+                                    </a>
+                                <?php endif; ?>
+                            </div>
+                        </form>
                     </div>
                 </div>
 
+                <!-- Search and Products List -->
+                <div class="admin-card">
+                    <div class="admin-card-header">
+                        <i class="fas fa-list"></i> All Products
+                        <?php if ($search): ?>
+                            <span style="font-weight: normal; font-size: 0.9rem; margin-left: 10px;">
+                                (Search results for: "<?php echo htmlspecialchars($search); ?>")
+                            </span>
+                        <?php endif; ?>
+                    </div>
+                    <div class="admin-card-body">
+                        <!-- Search Form -->
+                        <form method="get" style="margin-bottom: 20px; display: flex; gap: 15px; align-items: center;">
+                            <div style="flex: 1;">
+                                <input type="text" name="search" class="form-control" placeholder="Search by name, SKU, or category..." value="<?php echo htmlspecialchars($search); ?>">
+                            </div>
+                            <button type="submit" class="btn-primary">
+                                <i class="fas fa-search"></i> Search
+                            </button>
+                            <?php if ($search): ?>
+                                <a href="products.php" class="btn-secondary">
+                                    <i class="fas fa-times"></i> Clear
+                                </a>
+                            <?php endif; ?>
+                        </form>
+
+                        <div class="table-container">
+                            <table class="admin-table">
+                                <thead>
+                                    <tr>
+                                        <th>Product Name</th>
+                                        <th>Category</th>
+                                        <th>SKU</th>
+                                        <th>Price</th>
+                                        <th>Stock</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php if (empty($products)): ?>
+                                        <tr>
+                                            <td colspan="7" style="text-align: center; color: #7f8c8d; font-style: italic; padding: 40px;">
+                                                <?php if ($search): ?>
+                                                    No products found matching your search criteria.
+                                                <?php else: ?>
+                                                    No products found.
+                                                <?php endif; ?>
+                                            </td>
+                                        </tr>
+                                    <?php else: ?>
+                                        <?php foreach ($products as $product): ?>
+                                            <tr>
+                                                <td>
+                                                    <div style="display: flex; align-items: center; gap: 10px;">
+                                                        <?php if (!empty($product['image_url'])): ?>
+                                                            <img src="../uploads/products/<?php echo htmlspecialchars($product['image_url']); ?>" alt="Product" style="width: 40px; height: 40px; object-fit: cover; border-radius: 4px;">
+                                                        <?php else: ?>
+                                                            <div style="width: 40px; height: 40px; background: #f8f9fa; border-radius: 4px; display: flex; align-items: center; justify-content: center; color: #7f8c8d;">
+                                                                <i class="fas fa-image"></i>
+                                                            </div>
+                                                        <?php endif; ?>
+                                                        <strong><?php echo htmlspecialchars($product['product_name'] ?? ''); ?></strong>
+                                                    </div>
+                                                </td>
+                                                <td><?php echo htmlspecialchars($product['category_name']); ?></td>
+                                                <td>
+                                                    <?php if (!empty($product['sku'])): ?>
+                                                        <span style="font-family: monospace; background: #f8f9fa; padding: 2px 6px; border-radius: 4px;">
+                                                            <?php echo htmlspecialchars($product['sku']); ?>
+                                                        </span>
+                                                    <?php else: ?>
+                                                        <span style="color: #7f8c8d; font-style: italic;">No SKU</span>
+                                                    <?php endif; ?>
+                                                </td>
+                                                <td class="price-cell">₱<?php echo number_format($product['base_price'], 2); ?></td>
+                                                <td>
+                                                    <?php 
+                                                    $stock = (int)$product['stock_quantity'];
+                                                    $stockClass = '';
+                                                    if ($stock <= 5) {
+                                                        $stockClass = 'stock-low';
+                                                    } elseif ($stock <= 20) {
+                                                        $stockClass = 'stock-medium';
+                                                    } else {
+                                                        $stockClass = 'stock-good';
+                                                    }
+                                                    ?>
+                                                    <span class="<?php echo $stockClass; ?>"><?php echo $stock; ?></span>
+                                                </td>
+                                                <td>
+                                                    <a href="products.php?edit=<?php echo (int)$product['id']; ?>" class="btn-small" style="margin-right: 5px;" title="Edit Product">
+                                                        <i class="fas fa-edit"></i> Edit
+                                                    </a>
+                                                    <form method="POST" style="display:inline;" onsubmit="return confirm('Are you sure you want to delete this product?');">
+                                                        <input type="hidden" name="action" value="delete_product" />
+                                                        <input type="hidden" name="product_id" value="<?php echo (int)$product['id']; ?>" />
+                                                        <button type="submit" class="btn-danger" title="Delete Product">
+                                                            <i class="fas fa-trash-alt"></i>
+                                                        </button>
+                                                    </form>
+                                                </td>
+                                            </tr>
+                                        <?php endforeach; ?>
+                                    <?php endif; ?>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Pagination Controls -->
+                        <?php if ($totalPages > 1): ?>
+                            <div style="margin-top: 20px; text-align: center; padding: 15px; background: #f8f9fa; border-radius: 8px;">
+                                <?php if ($page > 1): ?>
+                                    <a href="?<?php echo http_build_query(array_merge($_GET, ['page' => $page - 1])); ?>" class="btn-small" style="margin-right: 10px;">
+                                        <i class="fas fa-chevron-left"></i> Previous
+                                    </a>
+                                <?php endif; ?>
+                                <span style="color: #2c3e50; font-weight: 600;">Page <?php echo $page; ?> of <?php echo $totalPages; ?></span>
+                                <?php if ($page < $totalPages): ?>
+                                    <a href="?<?php echo http_build_query(array_merge($_GET, ['page' => $page + 1])); ?>" class="btn-small" style="margin-left: 10px;">
+                                        Next <i class="fas fa-chevron-right"></i>
+                                    </a>
+                                <?php endif; ?>
+                            </div>
+                        <?php endif; ?>
+
+                        <?php if (!empty($products)): ?>
+                            <div style="margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px; text-align: center;">
+                                <strong style="color: #2c3e50;">
+                                    <i class="fas fa-box"></i> Total Products: <?php echo $totalProducts; ?>
+                                </strong>
+                            </div>
+                        <?php endif; ?>
+                    </div>
+                </div>
             </div>
         </main>
     </div>
@@ -593,6 +647,26 @@ $page_title = "Manage Products";
         function removeOption(button) {
             button.parentElement.remove();
         }
+
+        function toggleProductForm() {
+            const formBody = document.getElementById('productFormBody');
+            const icon = document.getElementById('formToggleIcon');
+            
+            if (formBody.style.display === 'none') {
+                formBody.style.display = 'block';
+                icon.style.transform = 'rotate(180deg)';
+            } else {
+                formBody.style.display = 'none';
+                icon.style.transform = 'rotate(0deg)';
+            }
+        }
+
+        // Show form if editing
+        <?php if ($edit_product): ?>
+        document.addEventListener('DOMContentLoaded', function() {
+            toggleProductForm();
+        });
+        <?php endif; ?>
     </script>
 </body>
 </html>

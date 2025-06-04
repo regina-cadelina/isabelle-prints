@@ -16,17 +16,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             case 'update_status':
                 $stmt = $pdo->prepare("UPDATE orders SET status = ? WHERE id = ?");
                 $stmt->execute([$_POST['status'], $_POST['order_id']]);
-                $success = "Order status updated!";
+                $success = "Order status updated successfully!";
                 break;
             case 'update_payment_status':
                 $stmt = $pdo->prepare("UPDATE orders SET payment_status = ? WHERE id = ?");
                 $stmt->execute([$_POST['payment_status'], $_POST['order_id']]);
-                $success = "Payment status updated!";
+                $success = "Payment status updated successfully!";
                 break;
             case 'delete_order':
                 $stmt = $pdo->prepare("DELETE FROM orders WHERE id = ?");
                 $stmt->execute([$_POST['order_id']]);
-                $success = "Order deleted!";
+                $success = "Order deleted successfully!";
                 break;
         }
     }
@@ -50,7 +50,7 @@ if ($search !== '') {
 }
 
 // Pagination setup
-$perPage = 5;
+$perPage = 10;
 $page = isset($_GET['page']) && is_numeric($_GET['page']) ? (int)$_GET['page'] : 1;
 if ($page < 1) $page = 1;
 $offset = ($page - 1) * $perPage;
@@ -96,15 +96,6 @@ if ($search) {
 }
 $orders = $stmt->fetchAll();
 
-// New query to fetch latest 5 orders for dashboard overview
-$stmt = $pdo->query("
-    SELECT o.id, o.order_number, o.status, o.total_amount, o.created_at, u.first_name, u.last_name
-    FROM orders o
-    LEFT JOIN users u ON o.user_id = u.id
-    ORDER BY o.created_at DESC
-    LIMIT 5
-");
-
 $page_title = "Manage Orders";
 $statusOptions = ['pending', 'processing', 'shipped', 'completed', 'cancelled'];
 ?>
@@ -145,119 +136,162 @@ $statusOptions = ['pending', 'processing', 'shipped', 'completed', 'cancelled'];
         </aside>
         <main class="admin-main">
             <div class="admin-content">
-                <h1>Manage Orders</h1>
+                <h1>Order Management</h1>
+
                 <?php if (isset($success)): ?>
-                    <div class="alert alert-success"><?php echo $success; ?></div>
+                    <div class="admin-alert success" style="margin-bottom: 20px;">
+                        <i class="fas fa-check-circle"></i> <?php echo htmlspecialchars($success); ?>
+                    </div>
                 <?php endif; ?>
 
                 <!-- Search Form -->
-                <form method="get" style="margin-bottom:15px;display:flex;gap:10px;align-items:center;">
-                    <input type="text" name="search" class="form-control" placeholder="Search by order ID,order #, customer, email, status..." value="<?php echo htmlspecialchars($search); ?>" style="max-width:250px;">
-                    <button type="submit" class="btn-secondary"><i class="fas fa-search"></i> Search</button>
-                    <?php if ($search): ?>
-                        <a href="orders.php" class="btn-secondary" style="background:#eee;color:#333;">Clear</a>
-                    <?php endif; ?>
-                </form>
-
-                <div class="admin-form" style="margin-top: 30px;">
-                    <h2>All Orders</h2>
-                    <div class="table-container">
-                        <table class="admin-table">
-                            <thead>
-                                <tr>
-                                    <th>Order ID</th>
-                                    <th>Order #</th>
-                                    <th>Customer</th>
-                                    <th>Email</th>
-                                    <th>Total</th>
-                                    <th>Status</th>
-                                    <th>Payment Status</th>
-                                    <th>Reference</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-<?php foreach ($orders as $order): ?>
-<tr>
-    <td><?php echo htmlspecialchars($order['order_id']); ?></td>
-    <td>#<?php echo htmlspecialchars($order['order_number']); ?></td>
-    <td><?php echo htmlspecialchars($order['first_name'] . ' ' . $order['last_name']); ?></td>
-    <td><?php echo htmlspecialchars($order['email']); ?></td>
-    <td><?php echo formatPrice($order['total_amount'], 2); ?></td>
-    <td>
-        <form method="POST" style="display:inline;">
-            <input type="hidden" name="action" value="update_status">
-            <input type="hidden" name="order_id" value="<?php echo htmlspecialchars($order['order_id']); ?>">
-            <select name="status" onchange="if(confirm('Change order status?')) this.form.submit();">
-                <?php foreach ($statusOptions as $status): ?>
-                    <option value="<?php echo $status; ?>" <?php if($order['status'] == $status) echo 'selected'; ?>>
-                        <?php echo ucfirst($status); ?>
-                    </option>
-                <?php endforeach; ?>
-            </select>
-        </form>
-    </td>
-    <td>
-        <form method="POST" style="display:inline;">
-            <input type="hidden" name="action" value="update_payment_status">
-            <input type="hidden" name="order_id" value="<?php echo htmlspecialchars($order['order_id']); ?>">
-            <select name="payment_status" onchange="if(confirm('Change payment status?')) this.form.submit();">
-                <?php foreach (['unpaid', 'pending', 'paid'] as $payStatus): ?>
-                    <option value="<?php echo $payStatus; ?>" <?php if($order['payment_status'] == $payStatus) echo 'selected'; ?>>
-                        <?php echo ucfirst($payStatus); ?>
-                    </option>
-                <?php endforeach; ?>
-            </select>
-        </form>
-    </td>
-    <td>#<?php echo htmlspecialchars($order['reference_number']); ?></td>
-    <td>
-        <form method="POST" style="display:inline;" onsubmit="return confirm('Delete this order?');">
-            <input type="hidden" name="action" value="delete_order">
-            <input type="hidden" name="order_id" value="<?php echo htmlspecialchars($order['order_id']); ?>">
-            <button type="submit" class="btn-small btn-danger">Delete</button>
-        </form>
-        <a href="order-details.php?id=<?php echo $order['order_id']; ?>" class="btn-small">View</a>
-    </td>
-</tr>
-<?php endforeach; ?>
-                            </tbody>
-                        </table>
+                <div class="admin-card" style="margin-bottom: 30px;">
+                    <div class="admin-card-header">
+                        <i class="fas fa-search"></i> Search Orders
+                    </div>
+                    <div class="admin-card-body">
+                        <form method="get" style="display: flex; gap: 15px; align-items: center;">
+                            <div style="flex: 1;">
+                                <input type="text" name="search" class="form-control" placeholder="Search by order ID, order #, customer, email, status..." value="<?php echo htmlspecialchars($search); ?>">
+                            </div>
+                            <button type="submit" class="btn-primary">
+                                <i class="fas fa-search"></i> Search
+                            </button>
+                            <?php if ($search): ?>
+                                <a href="orders.php" class="btn-secondary">
+                                    <i class="fas fa-times"></i> Clear
+                                </a>
+                            <?php endif; ?>
+                        </form>
                     </div>
                 </div>
 
-                <!-- Pagination Controls (place after the table, before closing tags) -->
-                <div style="margin-top:15px; text-align:center;">
-                    <?php if ($page > 1): ?>
-                        <a href="?<?php echo http_build_query(array_merge($_GET, ['page' => $page - 1])); ?>" class="btn-small" style="margin-right:10px;">&larr; Prev</a>
-                    <?php endif; ?>
-                    <span>Page <?php echo $page; ?> of <?php echo $totalPages; ?></span>
-                    <?php if ($page < $totalPages): ?>
-                        <a href="?<?php echo http_build_query(array_merge($_GET, ['page' => $page + 1])); ?>" class="btn-small" style="margin-left:10px;">Next &rarr;</a>
-                    <?php endif; ?>
+                <!-- Orders Table -->
+                <div class="admin-card">
+                    <div class="admin-card-header">
+                        <i class="fas fa-shopping-cart"></i> All Orders
+                        <?php if ($search): ?>
+                            <span style="font-weight: normal; font-size: 0.9rem; margin-left: 10px;">
+                                (Search results for: "<?php echo htmlspecialchars($search); ?>")
+                            </span>
+                        <?php endif; ?>
+                    </div>
+                    <div class="admin-card-body">
+                        <div class="table-container">
+                            <table class="admin-table">
+                                <thead>
+                                    <tr>
+                                        <th>Order ID</th>
+                                        <th>Order #</th>
+                                        <th>Customer</th>
+                                        <th>Total</th>
+                                        <th>Status</th>
+                                        <th>Payment</th>
+                                        <th>Date</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php if (empty($orders)): ?>
+                                        <tr>
+                                            <td colspan="8" style="text-align: center; color: #7f8c8d; font-style: italic; padding: 40px;">
+                                                <?php if ($search): ?>
+                                                    No orders found matching your search criteria.
+                                                <?php else: ?>
+                                                    No orders found.
+                                                <?php endif; ?>
+                                            </td>
+                                        </tr>
+                                    <?php else: ?>
+                                        <?php foreach ($orders as $order): ?>
+                                        <tr>
+                                            <td><strong><?php echo htmlspecialchars($order['order_id']); ?></strong></td>
+                                            <td>
+                                                <span style="font-family: monospace; background: #f8f9fa; padding: 2px 6px; border-radius: 4px;">
+                                                    #<?php echo htmlspecialchars($order['order_number']); ?>
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <div>
+                                                    <strong><?php echo htmlspecialchars($order['first_name'] . ' ' . $order['last_name']); ?></strong>
+                                                    <br><small style="color: #7f8c8d;"><?php echo htmlspecialchars($order['email']); ?></small>
+                                                </div>
+                                            </td>
+                                            <td class="price-cell"><?php echo formatPrice($order['total_amount']); ?></td>
+                                            <td>
+                                                <form method="POST" style="display: inline;">
+                                                    <input type="hidden" name="action" value="update_status">
+                                                    <input type="hidden" name="order_id" value="<?php echo htmlspecialchars($order['order_id']); ?>">
+                                                    <select name="status" onchange="if(confirm('Change order status?')) this.form.submit();" class="form-control" style="font-size: 0.85rem;">
+                                                        <?php foreach ($statusOptions as $status): ?>
+                                                            <option value="<?php echo $status; ?>" <?php if($order['status'] == $status) echo 'selected'; ?>>
+                                                                <?php echo ucfirst($status); ?>
+                                                            </option>
+                                                        <?php endforeach; ?>
+                                                    </select>
+                                                </form>
+                                            </td>
+                                            <td>
+                                                <form method="POST" style="display: inline;">
+                                                    <input type="hidden" name="action" value="update_payment_status">
+                                                    <input type="hidden" name="order_id" value="<?php echo htmlspecialchars($order['order_id']); ?>">
+                                                    <select name="payment_status" onchange="if(confirm('Change payment status?')) this.form.submit();" class="form-control" style="font-size: 0.85rem;">
+                                                        <?php foreach (['unpaid', 'pending', 'paid'] as $payStatus): ?>
+                                                            <option value="<?php echo $payStatus; ?>" <?php if($order['payment_status'] == $payStatus) echo 'selected'; ?>>
+                                                                <?php echo ucfirst($payStatus); ?>
+                                                            </option>
+                                                        <?php endforeach; ?>
+                                                    </select>
+                                                </form>
+                                            </td>
+                                            <td><?php echo date('M j, Y', strtotime($order['created_at'])); ?></td>
+                                            <td>
+                                                <a href="order-details.php?id=<?php echo $order['order_id']; ?>" class="btn-small" style="margin-right: 5px;">
+                                                    <i class="fas fa-eye"></i> View
+                                                </a>
+                                                <form method="POST" style="display: inline;" onsubmit="return confirm('Delete this order? This action cannot be undone.');">
+                                                    <input type="hidden" name="action" value="delete_order">
+                                                    <input type="hidden" name="order_id" value="<?php echo htmlspecialchars($order['order_id']); ?>">
+                                                    <button type="submit" class="btn-danger">
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
+                                                </form>
+                                            </td>
+                                        </tr>
+                                        <?php endforeach; ?>
+                                    <?php endif; ?>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Pagination Controls -->
+                        <?php if ($totalPages > 1): ?>
+                            <div style="margin-top: 20px; text-align: center; padding: 15px; background: #f8f9fa; border-radius: 8px;">
+                                <?php if ($page > 1): ?>
+                                    <a href="?<?php echo http_build_query(array_merge($_GET, ['page' => $page - 1])); ?>" class="btn-small" style="margin-right: 10px;">
+                                        <i class="fas fa-chevron-left"></i> Previous
+                                    </a>
+                                <?php endif; ?>
+                                <span style="color: #2c3e50; font-weight: 600;">Page <?php echo $page; ?> of <?php echo $totalPages; ?></span>
+                                <?php if ($page < $totalPages): ?>
+                                    <a href="?<?php echo http_build_query(array_merge($_GET, ['page' => $page + 1])); ?>" class="btn-small" style="margin-left: 10px;">
+                                        Next <i class="fas fa-chevron-right"></i>
+                                    </a>
+                                <?php endif; ?>
+                            </div>
+                        <?php endif; ?>
+
+                        <?php if (!empty($orders)): ?>
+                            <div style="margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px; text-align: center;">
+                                <strong style="color: #2c3e50;">
+                                    <i class="fas fa-shopping-cart"></i> Total Orders: <?php echo $totalOrders; ?>
+                                </strong>
+                            </div>
+                        <?php endif; ?>
+                    </div>
                 </div>
             </div>
         </main>
     </div>
-    <style>
-        .admin-table th, .admin-table td { padding: 8px 10px; }
-        .btn-small { background: #3498db; color: #fff; border: none; padding: 4px 8px; border-radius: 3px; font-size: 12px; text-decoration: none; }
-        .btn-danger { background: #e74c3c; }
-        .alert-success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; padding: 10px; border-radius: 4px; margin-bottom: 20px; }
-    </style>
 </body>
 </html>
-<script>
-    // Handle status change confirmation
-    document.querySelectorAll('select[name="status"]').forEach(select => {
-        select.addEventListener('change', function() {
-            if (!confirm('Change order status?')) {
-                this.value = this.dataset.originalValue; // Reset to original value
-            }
-        });
-    });
-    // Initialize original values for status selects
-    document.querySelectorAll('select[name="status"]').forEach(select => {
-        select.dataset.originalValue = select.value; // Store original value
-    });
-</script>

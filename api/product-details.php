@@ -108,7 +108,7 @@ try {
             </ul>
             <?php endif; ?>
             
-            <form class="product-form" onsubmit="addToCart(event, <?php echo $product['id']; ?>)">
+            <form class="product-form" onsubmit="addToCart(event, <?php echo $product['id']; ?>)" enctype="multipart/form-data">
                 <div class="product-options">
                     <?php foreach ($groupedOptions as $optionType => $typeOptions): ?>
                         <div class="option-group">
@@ -155,6 +155,25 @@ try {
                         <button type="button" class="qty-btn" onclick="changeQuantity(-1)">-</button>
                         <input type="number" name="quantity" class="qty-input" value="1" min="1" max="<?php echo $product['stock_quantity']; ?>" readonly>
                         <button type="button" class="qty-btn" onclick="changeQuantity(1)">+</button>
+                    </div>
+                </div>
+
+                <!-- Customization Section -->
+                <div class="customization-section">
+                    <div class="customization-notes">
+                        <label for="customization_notes">Customization Notes:</label>
+                        <textarea name="customization_notes" id="customization_notes" class="form-control" rows="3" placeholder="Add any special instructions or customization requests here..."></textarea>
+                        <small class="text-muted">Optional: Describe any specific customizations you'd like for this product.</small>
+                    </div>
+                    
+                    <div class="custom-image-upload" style="margin-top: 15px;">
+                        <label for="custom_image">Upload Custom Image:</label>
+                        <input type="file" name="custom_image" id="custom_image" class="form-control" accept="image/*,.pdf">
+                        <small class="text-muted">Optional: Upload your design, logo, or reference image (JPG, PNG, PDF).</small>
+                        <div id="image-preview" style="margin-top: 10px; display: none;">
+                            <img id="preview-img" src="/placeholder.svg" alt="Preview" style="max-width: 150px; max-height: 150px; border: 1px solid #ddd; border-radius: 4px;">
+                            <button type="button" onclick="removeImagePreview()" style="margin-left: 10px; background: #dc3545; color: white; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer;">Remove</button>
+                        </div>
                     </div>
                 </div>
                 
