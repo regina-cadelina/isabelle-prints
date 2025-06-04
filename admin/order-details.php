@@ -24,7 +24,6 @@ if (!$order) {
     exit;
 }
 
-
 // Fetch order items
 $stmt = $pdo->prepare("
     SELECT oi.*, p.name AS product_name, oi.selected_size AS size, oi.selected_color AS color
@@ -36,26 +35,6 @@ $stmt->execute([$order_id]);
 $items = $stmt->fetchAll();
 
 $page_title = "Order Details #" . $order['id'];
-
-// Handle custom image upload for this order
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['custom_image']) && $_FILES['custom_image']['error'] === UPLOAD_ERR_OK) {
-    $target_dir = "../uploads/custom/";
-    if (!is_dir($target_dir)) mkdir($target_dir, 0777, true);
-    $ext = strtolower(pathinfo($_FILES['custom_image']['name'], PATHINFO_EXTENSION));
-    $allowed = ['jpg', 'jpeg', 'png', 'pdf'];
-    if (in_array($ext, $allowed)) {
-        $filename = uniqid('custom_', true) . '.' . $ext;
-        $target_file = $target_dir . $filename;
-        if (move_uploaded_file($_FILES['custom_image']['tmp_name'], $target_file)) {
-            // Update the order's custom_image field in the database
-            $stmt = $pdo->prepare("UPDATE orders SET custom_image = ? WHERE id = ?");
-            $stmt->execute([$filename, $order_id]);
-            // Refresh to show the new image
-            header("Location: order-details.php?id=" . $order_id);
-            exit;
-        }
-    }
-}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -264,28 +243,53 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['custom_image']) && $
 
                     <!-- Customization Image Section -->
                     <div class="custom-image-section" style="margin-top:20px;">
-                        <?php if (!empty($order['custom_image'])): ?>
-                            <h3>Uploaded Custom Image</h3>
-                            <img src="../uploads/custom/<?php echo htmlspecialchars($order['custom_image']); ?>" alt="Custom Upload" style="max-width:200px;max-height:200px;object-fit:contain;border:1px solid #ccc;padding:5px;">
-                            <p>
-                                <a href="../uploads/custom/<?php echo htmlspecialchars($order['custom_image']); ?>" target="_blank" class="btn-small">View Full Image</a>
-                            </p>
-                        <?php else: ?>
-                            <h3>Uploaded Custom Image</h3>
-                            <p style="color:#888;">No custom image uploaded for this order.</p>
-                        <?php endif; ?>
+                        <div class="admin-card">
+                            <div class="admin-card-header">
+                                <i class="fas fa-image"></i> Uploaded Custom Image
+                            </div>
+                            <div class="admin-card-body">
+                                <?php if (!empty($order['custom_image'])): ?>
+                                    <div style="text-align: center;">
+                                        <img src="../uploads/custom-images/<?php echo htmlspecialchars($order['custom_image']); ?>" 
+                                             alt="Custom Upload" 
+                                             style="max-width:300px;max-height:300px;object-fit:contain;border:1px solid #ddd;padding:10px;border-radius:8px;">
+                                        <br><br>
+                                        <a href="../uploads/custom-images/<?php echo htmlspecialchars($order['custom_image']); ?>" 
+                                           target="_blank" 
+                                           class="btn-primary" 
+                                           style="text-decoration:none;padding:8px 16px;border-radius:4px;">
+                                            <i class="fas fa-external-link-alt"></i> View Full Image
+                                        </a>
+                                    </div>
+                                <?php else: ?>
+                                    <div style="text-align: center; color: #7f8c8d; padding: 40px;">
+                                        <i class="fas fa-image" style="font-size: 48px; margin-bottom: 15px; opacity: 0.5;"></i>
+                                        <p>No custom image uploaded for this order.</p>
+                                    </div>
+                                <?php endif; ?>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Customization Notes Section -->
                     <div class="custom-notes-section" style="margin-top:20px;">
-                        <h3>Customization Notes</h3>
-                        <?php if (!empty($order['customization_notes'])): ?>
-                            <div style="background:#f9f9f9; border:1px solid #eee; padding:12px; border-radius:6px;">
-                                <?php echo nl2br(htmlspecialchars($order['customization_notes'])); ?>
+                        <div class="admin-card">
+                            <div class="admin-card-header">
+                                <i class="fas fa-sticky-note"></i> Customization Notes
                             </div>
-                        <?php else: ?>
-                            <p style="color:#888;">No customization notes for this order.</p>
-                        <?php endif; ?>
+                            <div class="admin-card-body">
+                                <?php if (!empty($order['customization_notes'])): ?>
+                                    <div style="background:#f8f9fa; border:1px solid #e9ecef; padding:15px; border-radius:8px; line-height:1.6;">
+                                        <?php echo nl2br(htmlspecialchars($order['customization_notes'])); ?>
+                                    </div>
+                                <?php else: ?>
+                                    <div style="text-align: center; color: #7f8c8d; padding: 40px;">
+                                        <i class="fas fa-sticky-note" style="font-size: 48px; margin-bottom: 15px; opacity: 0.5;"></i>
+                                        <p>No customization notes for this order.</p>
+                                    </div>
+                                <?php endif; ?>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

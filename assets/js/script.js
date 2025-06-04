@@ -2,233 +2,264 @@
 
 // Product Modal Functions
 function openProductModal(productId) {
-    const modal = document.getElementById("productModal")
-    const modalContent = document.getElementById("modalContent")
-  
-    // Show loading
-    modalContent.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i> Loading...</div>'
-    modal.style.display = "block"
-  
-    // Fetch product details
-    fetch(`/isabelle-prints/api/product-details.php?id=${productId}`)
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error("Network response was not ok")
-        }
-        return response.text()
-      })
-      .then((html) => {
-        modalContent.innerHTML = html
-  
-        // Initialize any form elements or event listeners in the modal
-        initializeModalElements()
-      })
-      .catch((error) => {
-        console.error("Error loading product details:", error)
-        modalContent.innerHTML = `
+  const modal = document.getElementById("productModal")
+  const modalContent = document.getElementById("modalContent")
+
+  // Show loading
+  modalContent.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i> Loading...</div>'
+  modal.style.display = "block"
+
+  // Fetch product details
+  fetch(`/isabelle-prints/api/product-details.php?id=${productId}`)
+    .then((response) => {
+      if (!response.ok) {
+        throw new Error("Network response was not ok")
+      }
+      return response.text()
+    })
+    .then((html) => {
+      modalContent.innerHTML = html
+
+      // Initialize any form elements or event listeners in the modal
+      initializeModalElements()
+    })
+    .catch((error) => {
+      console.error("Error loading product details:", error)
+      modalContent.innerHTML = `
                   <div class="error-message">
                       <i class="fas fa-exclamation-circle"></i>
                       <p>Sorry, we couldn't load the product details. Please try again later.</p>
                       <button class="btn btn-primary" onclick="closeModal()">Close</button>
                   </div>
               `
-      })
-  }
-  
-  function initializeModalElements() {
-    // Initialize color options
-    const colorOptions = document.querySelectorAll(".color-option")
-    if (colorOptions.length > 0) {
-      colorOptions.forEach((option) => {
-        option.addEventListener("click", function () {
-          // Remove active class from all options
-          colorOptions.forEach((opt) => opt.classList.remove("active"))
-          // Add active class to clicked option
-          this.classList.add("active")
-          // Update hidden input value
-          const colorInput = document.querySelector('input[name="color"]')
-          if (colorInput) {
-            colorInput.value = this.dataset.color
-          }
-          // Update price if needed
-          updatePrice()
-        })
-      })
-    }
-  
-    // Initialize select options for price updates
-    const selectOptions = document.querySelectorAll(".product-options select")
-    selectOptions.forEach((select) => {
-      select.addEventListener("change", updatePrice)
     })
-  
-    // Set initial price
-    updatePrice()
-  }
-  
-  function updatePrice() {
-    const priceElement = document.querySelector(".price")
-    if (!priceElement) return
-  
-    const basePrice = Number.parseFloat(priceElement.textContent.replace("₱", "").replace(",", "")) || 0
-    let totalPrice = basePrice
-  
-    // Add price modifiers from selected options
-    const selects = document.querySelectorAll(".product-options select")
-    selects.forEach((select) => {
-      const selectedOption = select.options[select.selectedIndex]
-      if (selectedOption && selectedOption.dataset.price) {
-        totalPrice += Number.parseFloat(selectedOption.dataset.price)
-      }
-    })
-  
-    // Add price modifier from color option
-    const activeColorOption = document.querySelector(".color-option.active")
-    if (activeColorOption && activeColorOption.dataset.price) {
-      totalPrice += Number.parseFloat(activeColorOption.dataset.price)
-    }
-  
-    // Update displayed price
-    priceElement.textContent =
-      "₱" + totalPrice.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-  }
-  
-  function closeModal() {
-    const modal = document.getElementById("productModal")
-    modal.style.display = "none"
-  }
-  
-  function addToCart(event, productId) {
-    event.preventDefault()
-  
-    const form = event.target
-    const formData = new FormData(form)
-    formData.append("product_id", productId)
-    formData.append("action", "add_to_cart")
-  
-    // Show loading state
-    const submitBtn = form.querySelector('button[type="submit"]')
-    const originalText = submitBtn.textContent
-    submitBtn.textContent = "Adding to Cart..."
-    submitBtn.disabled = true
-  
-    fetch("/isabelle-prints/api/cart.php", {
-      method: "POST",
-      body: formData,
-    })
-      .then((response) => response.json())
-      .then((data) => {
-        if (data.success) {
-          // Update cart count in header
-          updateCartCount()
-  
-          // Show success message
-          submitBtn.textContent = "Added to Cart!"
-          submitBtn.style.backgroundColor = "#28a745"
-  
-          // Close modal after 1 second
-          setTimeout(() => {
-            closeModal()
-            submitBtn.textContent = originalText
-            submitBtn.disabled = false
-            submitBtn.style.backgroundColor = ""
-          }, 1000)
-        } else {
-          alert(data.message || "Error adding item to cart")
-          submitBtn.textContent = originalText
-          submitBtn.disabled = false
+}
+
+function initializeModalElements() {
+  // Initialize color options
+  const colorOptions = document.querySelectorAll(".color-option")
+  if (colorOptions.length > 0) {
+    colorOptions.forEach((option) => {
+      option.addEventListener("click", function () {
+        // Remove active class from all options
+        colorOptions.forEach((opt) => opt.classList.remove("active"))
+        // Add active class to clicked option
+        this.classList.add("active")
+        // Update hidden input value
+        const colorInput = document.querySelector('input[name="color"]')
+        if (colorInput) {
+          colorInput.value = this.dataset.color
         }
+        // Update price if needed
+        updatePrice()
       })
-      .catch((error) => {
-        console.error("Error:", error)
-        alert("Error adding item to cart")
-        submitBtn.textContent = originalText
-        submitBtn.disabled = false
-      })
+    })
   }
-  
-  // Close modal when clicking the X or outside
-  document.addEventListener("DOMContentLoaded", () => {
-    const modal = document.getElementById("productModal")
-    const closeBtn = document.querySelector(".close")
-  
-    if (closeBtn) {
-      closeBtn.onclick = () => {
-        closeModal()
-      }
+
+  // Initialize select options for price updates
+  const selectOptions = document.querySelectorAll(".product-options select")
+  selectOptions.forEach((select) => {
+    select.addEventListener("change", updatePrice)
+  })
+
+  // Initialize custom image preview
+  const customImageInput = document.getElementById("custom_image")
+  if (customImageInput) {
+    customImageInput.addEventListener("change", handleImagePreview)
+  }
+
+  // Set initial price
+  updatePrice()
+}
+
+function handleImagePreview(event) {
+  const file = event.target.files[0]
+  const previewContainer = document.getElementById("image-preview")
+  const previewImg = document.getElementById("preview-img")
+
+  if (file) {
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      previewImg.src = e.target.result
+      previewContainer.style.display = "block"
     }
-  
-    window.onclick = (event) => {
-      if (event.target == modal) {
-        closeModal()
-      }
+    reader.readAsDataURL(file)
+  } else {
+    previewContainer.style.display = "none"
+  }
+}
+
+function removeImagePreview() {
+  const customImageInput = document.getElementById("custom_image")
+  const previewContainer = document.getElementById("image-preview")
+
+  customImageInput.value = ""
+  previewContainer.style.display = "none"
+}
+
+function updatePrice() {
+  const priceElement = document.querySelector(".price")
+  if (!priceElement) return
+
+  const basePrice = Number.parseFloat(priceElement.textContent.replace("₱", "").replace(",", "")) || 0
+  let totalPrice = basePrice
+
+  // Add price modifiers from selected options
+  const selects = document.querySelectorAll(".product-options select")
+  selects.forEach((select) => {
+    const selectedOption = select.options[select.selectedIndex]
+    if (selectedOption && selectedOption.dataset.price) {
+      totalPrice += Number.parseFloat(selectedOption.dataset.price)
     }
   })
-  
-  // Cart quantity functions - FIXED VERSION
-  function changeQuantity(change) {
-    const input = document.querySelector(".qty-input")
-    if (input) {
-      const currentValue = Number.parseInt(input.value) || 1
-      const maxValue = Number.parseInt(input.getAttribute("max")) || 1000
-      const minValue = Number.parseInt(input.getAttribute("min")) || 1
-      const newValue = Math.max(minValue, Math.min(maxValue, currentValue + change))
-      input.value = newValue
+
+  // Add price modifier from color option
+  const activeColorOption = document.querySelector(".color-option.active")
+  if (activeColorOption && activeColorOption.dataset.price) {
+    totalPrice += Number.parseFloat(activeColorOption.dataset.price)
+  }
+
+  // Update displayed price
+  priceElement.textContent =
+    "₱" + totalPrice.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+}
+
+function closeModal() {
+  const modal = document.getElementById("productModal")
+  modal.style.display = "none"
+}
+
+function addToCart(event, productId) {
+  event.preventDefault()
+
+  const form = event.target
+  const formData = new FormData(form)
+  formData.append("product_id", productId)
+  formData.append("action", "add_to_cart")
+
+  // Show loading state
+  const submitBtn = form.querySelector('button[type="submit"]')
+  const originalText = submitBtn.textContent
+  submitBtn.textContent = "Adding to Cart..."
+  submitBtn.disabled = true
+
+  fetch("/isabelle-prints/api/cart.php", {
+    method: "POST",
+    body: formData,
+  })
+    .then((response) => response.json())
+    .then((data) => {
+      if (data.success) {
+        // Update cart count in header
+        updateCartCount()
+
+        // Show success message
+        submitBtn.textContent = "Added to Cart!"
+        submitBtn.style.backgroundColor = "#28a745"
+
+        // Close modal after 1 second
+        setTimeout(() => {
+          closeModal()
+          submitBtn.textContent = originalText
+          submitBtn.disabled = false
+          submitBtn.style.backgroundColor = ""
+        }, 1000)
+      } else {
+        alert(data.message || "Error adding item to cart")
+        submitBtn.textContent = originalText
+        submitBtn.disabled = false
+      }
+    })
+    .catch((error) => {
+      console.error("Error:", error)
+      alert("Error adding item to cart")
+      submitBtn.textContent = originalText
+      submitBtn.disabled = false
+    })
+}
+
+// Close modal when clicking the X or outside
+document.addEventListener("DOMContentLoaded", () => {
+  const modal = document.getElementById("productModal")
+  const closeBtn = document.querySelector(".close")
+
+  if (closeBtn) {
+    closeBtn.onclick = () => {
+      closeModal()
     }
   }
-  
-  // Update cart count in header
-  function updateCartCount() {
-    fetch("/isabelle-prints/api/cart-count.php")
-      .then((response) => response.json())
-      .then((data) => {
-        const cartCountElement = document.querySelector(".cart-count")
-        if (data.count > 0) {
-          if (cartCountElement) {
-            cartCountElement.textContent = data.count
-          } else {
-            // Create cart count element if it doesn't exist
-            const cartIcon = document.querySelector(".cart-icon")
-            if (cartIcon) {
-              const countSpan = document.createElement("span")
-              countSpan.className = "cart-count"
-              countSpan.textContent = data.count
-              cartIcon.appendChild(countSpan)
-            }
-          }
+
+  window.onclick = (event) => {
+    if (event.target == modal) {
+      closeModal()
+    }
+  }
+})
+
+// Cart quantity functions - FIXED VERSION
+function changeQuantity(change) {
+  const input = document.querySelector(".qty-input")
+  if (input) {
+    const currentValue = Number.parseInt(input.value) || 1
+    const maxValue = Number.parseInt(input.getAttribute("max")) || 1000
+    const minValue = Number.parseInt(input.getAttribute("min")) || 1
+    const newValue = Math.max(minValue, Math.min(maxValue, currentValue + change))
+    input.value = newValue
+  }
+}
+
+// Update cart count in header
+function updateCartCount() {
+  fetch("/isabelle-prints/api/get-cart-count.php")
+    .then((response) => response.json())
+    .then((data) => {
+      const cartCountElement = document.querySelector(".cart-count")
+      if (data.count > 0) {
+        if (cartCountElement) {
+          cartCountElement.textContent = data.count
         } else {
-          if (cartCountElement) {
-            cartCountElement.remove()
+          // Create cart count element if it doesn't exist
+          const cartIcon = document.querySelector(".cart-icon")
+          if (cartIcon) {
+            const countSpan = document.createElement("span")
+            countSpan.className = "cart-count"
+            countSpan.textContent = data.count
+            cartIcon.appendChild(countSpan)
           }
         }
-      })
-      .catch((error) => console.error("Error updating cart count:", error))
+      } else {
+        if (cartCountElement) {
+          cartCountElement.remove()
+        }
+      }
+    })
+    .catch((error) => console.error("Error updating cart count:", error))
+}
+
+function filterByCategory(categoryId) {
+  const currentUrl = new URL(window.location.href)
+  if (categoryId) {
+    currentUrl.searchParams.set("category", categoryId)
+  } else {
+    currentUrl.searchParams.delete("category")
   }
-  
-  function filterByCategory(categoryId) {
-    const currentUrl = new URL(window.location.href)
-    if (categoryId) {
-      currentUrl.searchParams.set("category", categoryId)
-    } else {
-      currentUrl.searchParams.delete("category")
-    }
-    window.location.href = currentUrl.toString()
-  }
-  
-  function sortProducts(sortValue) {
-    const currentUrl = new URL(window.location.href)
-    currentUrl.searchParams.set("sort", sortValue)
-    window.location.href = currentUrl.toString()
-  }
-  
-  // Show notification
-  function showNotification(message, type = "info") {
-    const notification = document.createElement("div")
-    notification.className = `notification notification-${type}`
-    notification.textContent = message
-  
-    // Add styles
-    notification.style.cssText = `
+  window.location.href = currentUrl.toString()
+}
+
+function sortProducts(sortValue) {
+  const currentUrl = new URL(window.location.href)
+  currentUrl.searchParams.set("sort", sortValue)
+  window.location.href = currentUrl.toString()
+}
+
+// Show notification
+function showNotification(message, type = "info") {
+  const notification = document.createElement("div")
+  notification.className = `notification notification-${type}`
+  notification.textContent = message
+
+  // Add styles
+  notification.style.cssText = `
           position: fixed;
           top: 20px;
           right: 20px;
@@ -239,29 +270,29 @@ function openProductModal(productId) {
           z-index: 9999;
           animation: slideIn 0.3s ease;
       `
-  
-    if (type === "success") {
-      notification.style.backgroundColor = "#28a745"
-    } else if (type === "error") {
-      notification.style.backgroundColor = "#dc3545"
-    } else {
-      notification.style.backgroundColor = "#007bff"
-    }
-  
-    document.body.appendChild(notification)
-  
-    // Remove after 3 seconds
-    setTimeout(() => {
-      notification.style.animation = "slideOut 0.3s ease"
-      setTimeout(() => {
-        notification.remove()
-      }, 300)
-    }, 3000)
+
+  if (type === "success") {
+    notification.style.backgroundColor = "#28a745"
+  } else if (type === "error") {
+    notification.style.backgroundColor = "#dc3545"
+  } else {
+    notification.style.backgroundColor = "#007bff"
   }
-  
-  // Add CSS animations and styles
-  const style = document.createElement("style")
-  style.textContent = `
+
+  document.body.appendChild(notification)
+
+  // Remove after 3 seconds
+  setTimeout(() => {
+    notification.style.animation = "slideOut 0.3s ease"
+    setTimeout(() => {
+      notification.remove()
+    }, 300)
+  }, 3000)
+}
+
+// Add CSS animations and styles
+const style = document.createElement("style")
+style.textContent = `
       @keyframes slideIn {
           from { transform: translateX(100%); opacity: 0; }
           to { transform: translateX(0); opacity: 1; }
@@ -365,25 +396,60 @@ function openProductModal(productId) {
           color: #6c757d;
           font-size: 48px;
       }
+
+      .customization-section {
+          margin: 20px 0;
+          padding: 15px;
+          background: #f8f9fa;
+          border-radius: 8px;
+          border: 1px solid #e9ecef;
+      }
+
+      .customization-notes textarea {
+          width: 100%;
+          margin-top: 5px;
+          padding: 8px;
+          border: 1px solid #ddd;
+          border-radius: 4px;
+          resize: vertical;
+      }
+
+      .custom-image-upload input[type="file"] {
+          width: 100%;
+          margin-top: 5px;
+          padding: 8px;
+          border: 1px solid #ddd;
+          border-radius: 4px;
+      }
+
+      .text-muted {
+          color: #6c757d;
+          font-size: 0.875rem;
+      }
+
+      #image-preview img {
+          border: 1px solid #ddd;
+          border-radius: 4px;
+          padding: 5px;
+      }
   `
-  document.head.appendChild(style)
-  
-  // Initialize page
-  document.addEventListener("DOMContentLoaded", () => {
-    // Update cart count on page load
-    updateCartCount()
-  
-    // Add smooth scrolling to anchor links
-    document.querySelectorAll('a[href^="#"]').forEach((anchor) => {
-      anchor.addEventListener("click", function (e) {
-        e.preventDefault()
-        const target = document.querySelector(this.getAttribute("href"))
-        if (target) {
-          target.scrollIntoView({
-            behavior: "smooth",
-          })
-        }
-      })
+document.head.appendChild(style)
+
+// Initialize page
+document.addEventListener("DOMContentLoaded", () => {
+  // Update cart count on page load
+  updateCartCount()
+
+  // Add smooth scrolling to anchor links
+  document.querySelectorAll('a[href^="#"]').forEach((anchor) => {
+    anchor.addEventListener("click", function (e) {
+      e.preventDefault()
+      const target = document.querySelector(this.getAttribute("href"))
+      if (target) {
+        target.scrollIntoView({
+          behavior: "smooth",
+        })
+      }
     })
   })
-  
+})
