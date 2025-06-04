@@ -3,6 +3,9 @@
 if (session_status() == PHP_SESSION_NONE) {
     session_start();
 }
+
+// Check if user is admin
+$is_admin = isset($_SESSION['user_type']) && $_SESSION['user_type'] === 'admin';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -17,6 +20,7 @@ if (session_status() == PHP_SESSION_NONE) {
     <link rel="stylesheet" href="/isabelle-prints/assets/css/account.css">
     <link rel="stylesheet" href="/isabelle-prints/assets/css/checkout-orders.css">
     <link rel="stylesheet" href="/isabelle-prints/assets/css/products.css">
+    <link rel="stylesheet" href="/isabelle-prints/assets/css/admin-floating-button.css">
 
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -79,6 +83,16 @@ if (session_status() == PHP_SESSION_NONE) {
     </style>
 </head>
 <body>
+<!-- Admin Floating Button - Only visible to admin users -->
+<?php if ($is_admin): ?>
+    <div id="admin-floating-btn" class="admin-floating-button">
+        <a href="/isabelle-prints/admin/dashboard.php" title="Back to Admin Dashboard">
+            <i class="fas fa-cog"></i>
+            <span class="admin-btn-text">Admin Dashboard</span>
+        </a>
+    </div>
+<?php endif; ?>
+
 <header>
     <div class="container">
         <div class="header-content">
@@ -119,6 +133,12 @@ if (session_status() == PHP_SESSION_NONE) {
                                 <a href="/isabelle-prints/pages/orders.php">
                                     <i class="fas fa-shopping-bag"></i> My Orders
                                 </a>
+                                <?php if ($is_admin): ?>
+                                <hr>
+                                <a href="/isabelle-prints/admin/dashboard.php">
+                                    <i class="fas fa-cog"></i> Admin Dashboard
+                                </a>
+                                <?php endif; ?>
                                 <hr>
                                 <a href="/isabelle-prints/pages/logout.php">
                                     <i class="fas fa-sign-out-alt"></i> Logout
