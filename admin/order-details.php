@@ -2,10 +2,8 @@
 session_start();
 require_once '../config/database.php';
 require_once '../includes/functions.php';
-
 // Require admin access
 requireAdmin();
-
 $current_user = getCurrentUser();
 
 // Get order ID from query string
@@ -26,9 +24,10 @@ if (!$order) {
     exit;
 }
 
+
 // Fetch order items
 $stmt = $pdo->prepare("
-    SELECT oi.*, p.name AS product_name
+    SELECT oi.*, p.name AS product_name, oi.selected_size AS size, oi.selected_color AS color
     FROM order_items oi
     LEFT JOIN products p ON oi.product_id = p.id
     WHERE oi.order_id = ?
@@ -66,7 +65,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['custom_image']) && $
     <title><?php echo htmlspecialchars($page_title); ?></title>
     <link rel="stylesheet" href="../assets/css/style.css">
     <link rel="stylesheet" href="../assets/css/admin.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"> 
 </head>
 <body class="admin-body">
     <!-- Admin Header -->
@@ -77,12 +76,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['custom_image']) && $
             </div>
             <div class="admin-user">
                 <div class="logout-container">
-                <a href="../pages/logout.php" class="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</a>
+                    <a href="../pages/logout.php" class="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</a>
                 </div>
             </div>
         </div>
     </header>
-
     <div class="admin-container">
         <!-- Sidebar -->
         <aside class="admin-sidebar">
@@ -99,7 +97,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['custom_image']) && $
                 </ul>
             </nav>
         </aside>
-
         <!-- Main Content -->
         <main class="admin-main">
             <div class="admin-content">
@@ -107,12 +104,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['custom_image']) && $
                 <a href="orders.php" class="back-link">
                     <i class="fas fa-arrow-left"></i> Back to Orders
                 </a>
-
                 <!-- Print Button -->
-                <button type="reset"class="btn btn-secondary" style="float:right; margin-bottom:15px;" onclick="window.location.href='../tcpdf6/examples/print-order-details.php'"><i class="fas fa-print"></i> Print</button>
-
+                <button type="reset" class="btn btn-secondary" style="float:right; margin-bottom:15px;" onclick="window.location.href='../tcpdf6/examples/print-order-details.php'">
+                    <i class="fas fa-print"></i> Print
+                </button>
                 <h1><i class="fas fa-receipt"></i> Order Details #<?php echo htmlspecialchars($order['id']); ?></h1>
-                
+
                 <!-- Order Details Grid -->
                 <div class="order-details-grid">
                     <!-- Order Summary -->
@@ -126,27 +123,56 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['custom_image']) && $
                                     <div class="order-info-label">Order Number</div>
                                     <div class="order-info-value">#<?php echo htmlspecialchars($order['id']); ?></div>
                                 </div>
-                                
                                 <div class="order-info-item">
                                     <div class="order-info-label">Order Date</div>
                                     <div class="order-info-value"><?php echo date('M j, Y H:i', strtotime($order['created_at'])); ?></div>
                                 </div>
-                                
                                 <div class="order-info-item">
                                     <div class="order-info-label">Customer</div>
                                     <div class="order-info-value"><?php echo htmlspecialchars($order['first_name'] . ' ' . $order['last_name']); ?></div>
                                 </div>
-                                
                                 <div class="order-info-item">
                                     <div class="order-info-label">Email</div>
                                     <div class="order-info-value"><?php echo htmlspecialchars($order['email']); ?></div>
                                 </div>
-                                <!-- Add phone number here -->
+                                <!-- Phone Number -->
                                 <div class="order-info-item">
                                     <div class="order-info-label">Phone Number</div>
                                     <div class="order-info-value"><?php echo htmlspecialchars($order['phone'] ?? ''); ?></div>
                                 </div>
-                                
+                                <!-- Size -->
+                                <div class="order-info-item">
+                                    <div class="order-info-label">Size</div>
+                                    <div class="order-info-value">
+                                        <?php
+                                            $sizeAvailable = false;
+                                            foreach ($items as $item) {
+                                                if (!empty($item['size'])) {
+                                                    echo htmlspecialchars($item['size']) . "<br>";
+                                                    $sizeAvailable = true;
+                                                }
+                                            }
+                                            if (!$sizeAvailable) echo '<span style="color:#888;">Not specified</span>';
+                                        ?>
+                                    </div>
+                                </div>
+                                <!-- Color -->
+                                <div class="order-info-item">
+                                    <div class="order-info-label">Color</div>
+                                    <div class="order-info-value">
+                                        <?php
+                                            $colorAvailable = false;
+                                            foreach ($items as $item) {
+                                                if (!empty($item['color'])) {
+                                                    echo htmlspecialchars($item['color']) . "<br>";
+                                                    $colorAvailable = true;
+                                                }
+                                            }
+                                            if (!$colorAvailable) echo '<span style="color:#888;">Not specified</span>';
+                                        ?>
+                                    </div>
+                                </div>
+                                <!-- Status -->
                                 <div class="order-info-item">
                                     <div class="order-info-label">Status</div>
                                     <div class="order-info-value">
@@ -155,7 +181,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['custom_image']) && $
                                         </span>
                                     </div>
                                 </div>
-                                
+                                <!-- Payment Status -->
                                 <div class="order-info-item">
                                     <div class="order-info-label">Payment Status</div>
                                     <div class="order-info-value">
@@ -164,18 +190,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['custom_image']) && $
                                         </span>
                                     </div>
                                 </div>
-                                
+                                <!-- Total Amount -->
                                 <div class="order-info-item">
                                     <div class="order-info-label">Total Amount</div>
                                     <div class="order-info-value price-cell">₱<?php echo number_format($order['total_amount'], 2); ?></div>
                                 </div>
-                                
+                                <!-- Downpayment and Remaining Balance -->
                                 <?php if (isset($order['downpayment_amount']) && $order['downpayment_amount'] > 0): ?>
                                 <div class="order-info-item">
                                     <div class="order-info-label">Downpayment</div>
                                     <div class="order-info-value">₱<?php echo number_format($order['downpayment_amount'], 2); ?></div>
                                 </div>
-                                
                                 <div class="order-info-item">
                                     <div class="order-info-label">Remaining Balance</div>
                                     <div class="order-info-value price-cell">₱<?php echo number_format($order['total_amount'] - $order['downpayment_amount'], 2); ?></div>
@@ -186,92 +211,83 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['custom_image']) && $
                     </div>
 
                     <!-- Proof of Payment -->
-<div class="payment-proof-section">
-    <div class="payment-proof-header">
-        <i class="fas fa-receipt"></i> Proof of Payment
-    </div>
-    <div class="payment-proof-body">
-        <?php if (!empty($order['payment_proof_file'])): ?>
-            <?php $proofUrl = '../uploads/payment-proofs/' . htmlspecialchars($order['payment_proof_file']); ?>
-            
-            <br>
-            <img src="<?php echo $proofUrl; ?>" alt="Proof of Payment" class="proof-image">
-        <?php else: ?>
-            <div class="no-proof-message">
-                <i class="fas fa-exclamation-triangle"></i>
-                No proof of payment uploaded yet.
-            </div>
-        <?php endif; ?>
-    </div>
-</div>
-
-                <!-- Order Items -->
-                <div class="order-items-section">
-                    <div class="order-items-header">
-                        <i class="fas fa-shopping-bag"></i> Order Items
+                    <div class="payment-proof-section">
+                        <div class="payment-proof-header">
+                            <i class="fas fa-receipt"></i> Proof of Payment
+                        </div>
+                        <div class="payment-proof-body">
+                            <?php if (!empty($order['payment_proof_file'])): ?>
+                                <?php $proofUrl = '../uploads/payment-proofs/' . htmlspecialchars($order['payment_proof_file']); ?>
+                                <br>
+                                <img src="<?php echo $proofUrl; ?>" alt="Proof of Payment" class="proof-image">
+                            <?php else: ?>
+                                <div class="no-proof-message">
+                                    <i class="fas fa-exclamation-triangle"></i>
+                                    No proof of payment uploaded yet.
+                                </div>
+                            <?php endif; ?>
+                        </div>
                     </div>
-                    <div class="table-container">
-                        <table class="order-items-table">
-                            <thead>
-                                <tr>
-                                    <th><i class="fas fa-box"></i> Product</th>
-                                    <th><i class="fas fa-sort-numeric-up"></i> Quantity</th>
-                                    <th><i class="fas fa-tag"></i> Unit Price</th>
-                                    <th><i class="fas fa-calculator"></i> Subtotal</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php foreach ($items as $item): ?>
-                                <tr>
-                                    <td><?php echo htmlspecialchars($item['product_name']); ?></td>
-                                    <td>
-                                        <span class="quantity-badge"><?php echo $item['quantity']; ?></span>
-                                    </td>
-                                    <td class="price-cell">₱<?php echo number_format($item['unit_price'], 2); ?></td>
-                                    <td class="price-cell">₱<?php echo number_format($item['unit_price'] * $item['quantity'], 2); ?></td>
-                                </tr>
-                                <?php endforeach; ?>
-                            </tbody>
-                        </table>
+
+                    <!-- Order Items -->
+                    <div class="order-items-section">
+                        <div class="order-items-header">
+                            <i class="fas fa-shopping-bag"></i> Order Items
+                        </div>
+                        <div class="table-container">
+                            <table class="order-items-table">
+                                <thead>
+                                    <tr>
+                                        <th><i class="fas fa-box"></i> Product</th>
+                                        <th><i class="fas fa-sort-numeric-up"></i> Quantity</th>
+                                        <th><i class="fas fa-tag"></i> Unit Price</th>
+                                        <th><i class="fas fa-calculator"></i> Subtotal</th>
+                                        <th><i class="fas fa-ruler-vertical"></i> Size</th>
+                                        <th><i class="fas fa-palette"></i> Color</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php foreach ($items as $item): ?>
+                                    <tr>
+                                        <td><?php echo htmlspecialchars($item['product_name']); ?></td>
+                                        <td><span class="quantity-badge"><?php echo $item['quantity']; ?></span></td>
+                                        <td class="price-cell">₱<?php echo number_format($item['unit_price'], 2); ?></td>
+                                        <td class="price-cell">₱<?php echo number_format($item['unit_price'] * $item['quantity'], 2); ?></td>
+                                        <td><?php echo !empty($item['size']) ? htmlspecialchars($item['size']) : '<span style="color:#888;">-</span>'; ?></td>
+                                        <td><?php echo !empty($item['color']) ? htmlspecialchars($item['color']) : '<span style="color:#888;">-</span>'; ?></td>
+                                    </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Customization Image Section -->
+                    <div class="custom-image-section" style="margin-top:20px;">
+                        <?php if (!empty($order['custom_image'])): ?>
+                            <h3>Uploaded Custom Image</h3>
+                            <img src="../uploads/custom/<?php echo htmlspecialchars($order['custom_image']); ?>" alt="Custom Upload" style="max-width:200px;max-height:200px;object-fit:contain;border:1px solid #ccc;padding:5px;">
+                            <p>
+                                <a href="../uploads/custom/<?php echo htmlspecialchars($order['custom_image']); ?>" target="_blank" class="btn-small">View Full Image</a>
+                            </p>
+                        <?php else: ?>
+                            <h3>Uploaded Custom Image</h3>
+                            <p style="color:#888;">No custom image uploaded for this order.</p>
+                        <?php endif; ?>
+                    </div>
+
+                    <!-- Customization Notes Section -->
+                    <div class="custom-notes-section" style="margin-top:20px;">
+                        <h3>Customization Notes</h3>
+                        <?php if (!empty($order['customization_notes'])): ?>
+                            <div style="background:#f9f9f9; border:1px solid #eee; padding:12px; border-radius:6px;">
+                                <?php echo nl2br(htmlspecialchars($order['customization_notes'])); ?>
+                            </div>
+                        <?php else: ?>
+                            <p style="color:#888;">No customization notes for this order.</p>
+                        <?php endif; ?>
                     </div>
                 </div>
-
-                
-<!-- Order Details Section -->
-<div class="order-details-section">
-   
-    <!-- ...existing order details fields... -->
-
-    <!-- Customization Image Section -->
-    <?php if (!empty($order['custom_image'])): ?>
-        <div class="custom-image-section" style="margin-top:20px;">
-            <h3>Uploaded Custom Image</h3>
-            <img src="../uploads/custom/<?php echo htmlspecialchars($order['custom_image']); ?>" alt="Custom Upload" style="max-width:200px;max-height:200px;object-fit:contain;border:1px solid #ccc;padding:5px;">
-            <p>
-                <a href="../uploads/custom/<?php echo htmlspecialchars($order['custom_image']); ?>" target="_blank" class="btn-small">View Full Image</a>
-            </p>
-        </div>
-    <?php else: ?>
-        <div class="custom-image-section" style="margin-top:20px;">
-            <h3>Uploaded Custom Image</h3>
-            <p style="color:#888;">No custom image uploaded for this order.</p>
-        </div>
-    <?php endif; ?>
-
-    <!-- Customization Notes Section -->
-    <div class="custom-notes-section" style="margin-top:20px;">
-    <h3>Customization Notes</h3>
-    <?php
-    // If you store notes per order (in the orders table)
-    if (!empty($order['customization_notes'])): ?>
-        <div style="background:#f9f9f9; border:1px solid #eee; padding:12px; border-radius:6px;">
-            <?php echo nl2br(htmlspecialchars($order['customization_notes'])); ?>
-        </div>
-    <?php else: ?>
-        <p style="color:#888;">No customization notes for this order.</p>
-    <?php endif; ?>
-</div>
-                
             </div>
         </main>
     </div>
