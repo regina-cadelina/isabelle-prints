@@ -1,5 +1,4 @@
 <?php
-
 // Check if user is logged in and is an admin
 require_once '../config/database.php';
 
@@ -21,14 +20,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['customer_action'], $_
         // Toggle is_active
         $stmt = $pdo->prepare("UPDATE users SET is_active = NOT is_active WHERE id = ?");
         $stmt->execute([$customer_id]);
+        $success = "Customer status updated successfully!";
     } elseif ($_POST['customer_action'] === 'delete') {
         // Delete user
         $stmt = $pdo->prepare("DELETE FROM users WHERE id = ?");
         $stmt->execute([$customer_id]);
+        $success = "Customer deleted successfully!";
     }
-    // Refresh to avoid resubmission
-    header("Location: customers.php");
-    exit;
 }
 
 // --- SEARCH FUNCTIONALITY ---
@@ -87,57 +85,130 @@ $page_title = "Customers";
     <div class="admin-container">
         <main class="admin-main">
             <div class="admin-content">
-                <h1>Customers</h1>
-                <!-- Search Form -->
-                <form method="get" style="margin-bottom:15px;display:flex;gap:10px;align-items:center;">
-                    <input type="text" name="search" class="form-control" placeholder="Search by name or email" value="<?php echo htmlspecialchars($search); ?>" style="max-width:250px;">
-                    <button type="submit" class="btn-secondary"><i class="fas fa-search"></i> Search</button>
-                    <?php if ($search): ?>
-                        <a href="customers.php" class="btn-secondary" style="background:#eee;color:#333;">Clear</a>
-                    <?php endif; ?>
-                </form>
-                <div class="admin-form" style="margin-top: 30px;">
-                    <table class="admin-table">
-                        <thead>
-    <tr>
-        <th>ID</th>
-        <th>Name</th>
-        <th>Email</th>
-        <th>Registered</th>
-        <th>Actions</th>
-    </tr>
-</thead>
-                        <tbody>
-                            <?php if (empty($customers)): ?>
-                                <tr>
-                                    <td colspan="5">No customers found.</td>
-                                </tr>
-                            <?php else: ?>
-                                <?php foreach ($customers as $customer): ?>
-                                    <tr>
-                                        <td><?php echo $customer['id']; ?></td>
-                                        <td><?php echo htmlspecialchars(($customer['first_name'] ?? '') . ' ' . ($customer['last_name'] ?? '')); ?></td>
-                                        <td><?php echo htmlspecialchars($customer['email'] ?? ''); ?></td>
-                                        <td><?php echo htmlspecialchars($customer['created_at'] ?? ''); ?></td>
-                                        <td>
-                                            <form method="POST" style="display:inline;">
-                                                <input type="hidden" name="customer_id" value="<?php echo $customer['id']; ?>">
-                                                <button type="submit" name="customer_action" value="toggle_active" class="btn-action">
-                                                    <?php echo ($customer['is_active'] ?? 0) ? 'Disable' : 'Enable'; ?>
-                                                </button>
-                                            </form>
-                                            <form method="POST" style="display:inline;" onsubmit="return confirm('Are you sure you want to delete this account? This action cannot be undone.');">
-                                                <input type="hidden" name="customer_id" value="<?php echo $customer['id']; ?>">
-                                                <button type="submit" name="customer_action" value="delete" class="btn-action btn-danger">
-                                                    Delete
-                                                </button>
-                                            </form>
-                                        </td>
-                                    </tr>
-                                <?php endforeach; ?>
+                <h1>Customer Management</h1>
+
+                <?php if (isset($success)): ?>
+                    <div class="admin-alert success" style="margin-bottom: 20px;">
+                        <i class="fas fa-check-circle"></i> <?php echo htmlspecialchars($success); ?>
+                    </div>
+                <?php endif; ?>
+
+                <!-- Search and Filters -->
+                <div class="admin-card" style="margin-bottom: 30px;">
+                    <div class="admin-card-header">
+                        <i class="fas fa-search"></i> Search Customers
+                    </div>
+                    <div class="admin-card-body">
+                        <form method="get" style="display: flex; gap: 15px; align-items: center;">
+                            <div style="flex: 1;">
+                                <input type="text" name="search" class="form-control" placeholder="Search by name or email..." value="<?php echo htmlspecialchars($search); ?>">
+                            </div>
+                            <button type="submit" class="btn-primary">
+                                <i class="fas fa-search"></i> Search
+                            </button>
+                            <?php if ($search): ?>
+                                <a href="customers.php" class="btn-secondary">
+                                    <i class="fas fa-times"></i> Clear
+                                </a>
                             <?php endif; ?>
-                        </tbody>
-                    </table>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Customers Table -->
+                <div class="admin-card">
+                    <div class="admin-card-header">
+                        <i class="fas fa-users"></i> All Customers
+                        <?php if ($search): ?>
+                            <span style="font-weight: normal; font-size: 0.9rem; margin-left: 10px;">
+                                (Search results for: "<?php echo htmlspecialchars($search); ?>")
+                            </span>
+                        <?php endif; ?>
+                    </div>
+                    <div class="admin-card-body">
+                        <div class="table-container">
+                            <table class="admin-table">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Name</th>
+                                        <th>Email</th>
+                                        <th>Status</th>
+                                        <th>Registered</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php if (empty($customers)): ?>
+                                        <tr>
+                                            <td colspan="6" style="text-align: center; color: #7f8c8d; font-style: italic; padding: 40px;">
+                                                <?php if ($search): ?>
+                                                    No customers found matching your search criteria.
+                                                <?php else: ?>
+                                                    No customers found.
+                                                <?php endif; ?>
+                                            </td>
+                                        </tr>
+                                    <?php else: ?>
+                                        <?php foreach ($customers as $customer): ?>
+                                            <tr>
+                                                <td><strong><?php echo $customer['id']; ?></strong></td>
+                                                <td>
+                                                    <div style="display: flex; align-items: center; gap: 10px;">
+                                                        <div style="width: 35px; height: 35px; background: linear-gradient(135deg, #3498db, #2980b9); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">
+                                                            <?php echo strtoupper(substr($customer['first_name'] ?? 'U', 0, 1)); ?>
+                                                        </div>
+                                                        <div>
+                                                            <strong><?php echo htmlspecialchars(($customer['first_name'] ?? '') . ' ' . ($customer['last_name'] ?? '')); ?></strong>
+                                                            <?php if (($customer['user_type'] ?? '') === 'admin'): ?>
+                                                                <br><small style="color: #e74c3c; font-weight: bold;">ADMIN</small>
+                                                            <?php endif; ?>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td><?php echo htmlspecialchars($customer['email'] ?? ''); ?></td>
+                                                <td>
+                                                    <?php if (($customer['is_active'] ?? 0)): ?>
+                                                        <span class="badge paid">Active</span>
+                                                    <?php else: ?>
+                                                        <span class="badge unpaid">Inactive</span>
+                                                    <?php endif; ?>
+                                                </td>
+                                                <td><?php echo date('M j, Y', strtotime($customer['created_at'] ?? 'now')); ?></td>
+                                                <td>
+                                                    <?php if (($customer['user_type'] ?? '') !== 'admin'): ?>
+                                                        <form method="POST" style="display: inline-block; margin-right: 5px;">
+                                                            <input type="hidden" name="customer_id" value="<?php echo $customer['id']; ?>">
+                                                            <button type="submit" name="customer_action" value="toggle_active" class="btn-small" style="background: <?php echo ($customer['is_active'] ?? 0) ? '#e74c3c' : '#27ae60'; ?>;">
+                                                                <i class="fas fa-<?php echo ($customer['is_active'] ?? 0) ? 'ban' : 'check'; ?>"></i>
+                                                                <?php echo ($customer['is_active'] ?? 0) ? 'Disable' : 'Enable'; ?>
+                                                            </button>
+                                                        </form>
+                                                        <form method="POST" style="display: inline-block;" onsubmit="return confirm('Are you sure you want to delete this customer account? This action cannot be undone.');">
+                                                            <input type="hidden" name="customer_id" value="<?php echo $customer['id']; ?>">
+                                                            <button type="submit" name="customer_action" value="delete" class="btn-danger">
+                                                                <i class="fas fa-trash"></i> Delete
+                                                            </button>
+                                                        </form>
+                                                    <?php else: ?>
+                                                        <span style="color: #7f8c8d; font-style: italic;">Admin Account</span>
+                                                    <?php endif; ?>
+                                                </td>
+                                            </tr>
+                                        <?php endforeach; ?>
+                                    <?php endif; ?>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <?php if (!empty($customers)): ?>
+                            <div style="margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px; text-align: center;">
+                                <strong style="color: #2c3e50;">
+                                    <i class="fas fa-users"></i> Total Customers: <?php echo count($customers); ?>
+                                </strong>
+                            </div>
+                        <?php endif; ?>
+                    </div>
                 </div>
             </div>
         </main>
