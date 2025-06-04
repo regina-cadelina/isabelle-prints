@@ -145,7 +145,6 @@ $statusOptions = ['pending', 'processing', 'shipped', 'completed', 'cancelled'];
                 <?php endif; ?>
 
                 <!-- Search Form -->
-<<<<<<< HEAD
                 <div class="admin-card" style="margin-bottom: 30px;">
                     <div class="admin-card-header">
                         <i class="fas fa-search"></i> Search Orders
@@ -164,7 +163,6 @@ $statusOptions = ['pending', 'processing', 'shipped', 'completed', 'cancelled'];
                                 </a>
                             <?php endif; ?>
                         </form>
-=======
                 <form method="get" style="margin-bottom:15px;display:flex;gap:10px;align-items:center;">
                     <input type="text" name="search" class="form-control" placeholder="Search by order ID,order #, customer, email, status..." value="<?php echo htmlspecialchars($search); ?>" style="max-width:250px;">
                     <button type="submit" class="btn-secondary"><i class="fas fa-search"></i> Search</button>
@@ -237,7 +235,6 @@ $statusOptions = ['pending', 'processing', 'shipped', 'completed', 'cancelled'];
 <?php endforeach; ?>
                             </tbody>
                         </table>
->>>>>>> e28bc4c208c44d9a68dea0d4eb4719401801552d
                     </div>
                 </div>
 
