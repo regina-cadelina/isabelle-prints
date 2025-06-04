@@ -182,12 +182,12 @@ $statusOptions = ['pending', 'processing', 'shipped', 'completed', 'cancelled'];
                                 <thead>
                                     <tr>
                                         <th>Order ID</th>
-                                        <th>Order #</th>
+                                        <th>Order number</th>
+                                        <th>Reference number</th>
                                         <th>Customer</th>
                                         <th>Total</th>
                                         <th>Status</th>
                                         <th>Payment</th>
-                                        <th>Date</th>
                                         <th>Actions</th>
                                     </tr>
                                 </thead>
@@ -211,6 +211,7 @@ $statusOptions = ['pending', 'processing', 'shipped', 'completed', 'cancelled'];
                                                     #<?php echo htmlspecialchars($order['order_number']); ?>
                                                 </span>
                                             </td>
+                                            <td><?php echo htmlspecialchars($order['reference_number'] ?: 'N/A'); ?></td>
                                             <td>
                                                 <div>
                                                     <strong><?php echo htmlspecialchars($order['first_name'] . ' ' . $order['last_name']); ?></strong>
@@ -244,7 +245,7 @@ $statusOptions = ['pending', 'processing', 'shipped', 'completed', 'cancelled'];
                                                     </select>
                                                 </form>
                                             </td>
-                                            <td><?php echo date('M j, Y', strtotime($order['created_at'])); ?></td>
+                                            
                                             <td>
                                                 <a href="order-details.php?id=<?php echo $order['order_id']; ?>" class="btn-small" style="margin-right: 5px;">
                                                     <i class="fas fa-eye"></i> View

@@ -198,7 +198,14 @@ $page_title = "Order Details #" . $order['id'];
                             <?php if (!empty($order['payment_proof_file'])): ?>
                                 <?php $proofUrl = '../uploads/payment-proofs/' . htmlspecialchars($order['payment_proof_file']); ?>
                                 <br>
-                                <img src="<?php echo $proofUrl; ?>" alt="Proof of Payment" class="proof-image">
+                                <img src="<?php echo $proofUrl; ?>" alt="Proof of Payment" class="proof-image" style="max-width:300px;max-height:300px;object-fit:contain;border:1px solid #ddd;padding:10px;border-radius:8px;">
+                                <br><br>
+                                <a href="<?php echo $proofUrl; ?>" 
+                                target="_blank" 
+                                class="btn-primary" 
+                                style="text-decoration:none;padding:8px 16px;border-radius:4px;">
+                                    <i class="fas fa-external-link-alt"></i> View Full Image
+                                </a>
                             <?php else: ?>
                                 <div class="no-proof-message">
                                     <i class="fas fa-exclamation-triangle"></i>
@@ -207,6 +214,7 @@ $page_title = "Order Details #" . $order['id'];
                             <?php endif; ?>
                         </div>
                     </div>
+
 
                     <!-- Order Items -->
                     <div class="order-items-section">
