@@ -1,0 +1,125 @@
+/* Admin Floating Button Styles */
+.admin-floating-button {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    z-index: 9999;
+    background: linear-gradient(135deg, #f4c430 0%, #e5b62b 100%);
+    border-radius: 50px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    transition: all 0.3s ease;
+    animation: float 3s ease-in-out infinite;
+  }
+  
+  .admin-floating-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 25px rgba(0, 0, 0, 0.2);
+  }
+  
+  .admin-floating-button a {
+    display: flex;
+    align-items: center;
+    padding: 12px 20px;
+    color: #333;
+    text-decoration: none;
+    border-radius: 50px;
+    font-weight: 600;
+    font-size: 14px;
+    transition: all 0.3s ease;
+  }
+  
+  .admin-floating-button a:hover {
+    color: #333;
+    text-decoration: none;
+  }
+  
+  .admin-floating-button i {
+    font-size: 16px;
+    margin-right: 8px;
+    animation: spin 4s linear infinite;
+  }
+  
+  .admin-btn-text {
+    white-space: nowrap;
+  }
+  
+  /* Floating animation */
+  @keyframes float {
+    0%,
+    100% {
+      transform: translateY(0px);
+    }
+    50% {
+      transform: translateY(-5px);
+    }
+  }
+  
+  /* Gear spinning animation */
+  @keyframes spin {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
+  }
+  
+  /* Responsive design */
+  @media (max-width: 768px) {
+    .admin-floating-button {
+      top: 15px;
+      left: 15px;
+    }
+  
+    .admin-floating-button a {
+      padding: 10px 16px;
+      font-size: 12px;
+    }
+  
+    .admin-floating-button i {
+      font-size: 14px;
+      margin-right: 6px;
+    }
+  }
+  
+  /* Alternative compact version for smaller screens */
+  @media (max-width: 480px) {
+    .admin-floating-button {
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+    }
+  
+    .admin-floating-button a {
+      padding: 0;
+      width: 50px;
+      height: 50px;
+      justify-content: center;
+      border-radius: 50%;
+    }
+  
+    .admin-btn-text {
+      display: none;
+    }
+  
+    .admin-floating-button i {
+      margin-right: 0;
+      font-size: 18px;
+    }
+  }
+  
+  /* Pulse effect on load */
+  .admin-floating-button {
+    animation: float 3s ease-in-out infinite, pulse 2s ease-in-out infinite;
+  }
+  
+  @keyframes pulse {
+    0%,
+    100% {
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    }
+    50% {
+      box-shadow: 0 4px 20px rgba(244, 196, 48, 0.4);
+    }
+  }
+  
