@@ -54,7 +54,6 @@ $page_title = "Customers";
                 <h2><i class="fas fa-cog"></i> Admin Panel</h2>
             </div>
             <div class="admin-user">
-                <span>&nbsp Welcome, <?php echo htmlspecialchars($current_user['first_name'] ?? 'Admin'); ?></span>
                 <a href="../pages/logout.php" class="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</a>
             </div>
         </div>
@@ -64,6 +63,7 @@ $page_title = "Customers";
         <nav class="admin-menu">
             <ul>
                 <li><a href="dashboard.php"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+                <li><a href="categories.php"><i class="fas fa-tags"></i> Manage Categories</a></li>
                 <li><a href="products.php"><i class="fas fa-box"></i> Manage Products</a></li>
                 <li><a href="orders.php"><i class="fas fa-shopping-cart"></i> Manage Orders</a></li>
                 <li><a href="customers.php" class="active"><i class="fas fa-users"></i> Customers</a></li>
@@ -78,7 +78,6 @@ $page_title = "Customers";
         <main class="admin-main">
             <div class="admin-content">
                 <h1>Customers</h1>
-                <p><a href="dashboard.php">&larr; Back to Dashboard</a></p>
                 <div class="admin-form" style="margin-top: 30px;">
                     <table class="admin-table">
                         <thead>

@@ -56,7 +56,6 @@ $page_title = "Order Details #" . $order['id'];
                 <h2><i class="fas fa-cog"></i> Admin Panel</h2>
             </div>
             <div class="admin-user">
-                <span>Welcome, <?php echo htmlspecialchars($current_user['first_name']); ?></span>
                 <div class="logout-container">
                 <a href="../pages/logout.php" class="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</a>
                 </div>
@@ -70,6 +69,7 @@ $page_title = "Order Details #" . $order['id'];
             <nav class="admin-menu">
                 <ul>
                     <li><a href="dashboard.php"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+                    <li><a href="categories.php"><i class="fas fa-tags"></i> Manage Categories</a></li>
                     <li><a href="products.php"><i class="fas fa-box"></i> Manage Products</a></li>
                     <li><a href="orders.php" class="active"><i class="fas fa-shopping-cart"></i> Manage Orders</a></li>
                     <li><a href="customers.php"><i class="fas fa-users"></i> Customers</a></li>
@@ -83,10 +83,14 @@ $page_title = "Order Details #" . $order['id'];
         <!-- Main Content -->
         <main class="admin-main">
             <div class="admin-content">
+                <!-- Back to Orders Link -->
                 <a href="orders.php" class="back-link">
                     <i class="fas fa-arrow-left"></i> Back to Orders
                 </a>
-                
+
+                <!-- Print Button -->
+                <button type="reset"class="btn btn-secondary" style="float:right; margin-bottom:15px;" onclick="window.location.href='../tcpdf6/examples/print-order-details.php'"><i class="fas fa-print"></i> Print</button>
+
                 <h1><i class="fas fa-receipt"></i> Order Details #<?php echo htmlspecialchars($order['id']); ?></h1>
                 
                 <!-- Order Details Grid -->
@@ -116,6 +120,11 @@ $page_title = "Order Details #" . $order['id'];
                                 <div class="order-info-item">
                                     <div class="order-info-label">Email</div>
                                     <div class="order-info-value"><?php echo htmlspecialchars($order['email']); ?></div>
+                                </div>
+                                <!-- Add phone number here -->
+                                <div class="order-info-item">
+                                    <div class="order-info-label">Phone Number</div>
+                                    <div class="order-info-value"><?php echo htmlspecialchars($order['phone'] ?? ''); ?></div>
                                 </div>
                                 
                                 <div class="order-info-item">

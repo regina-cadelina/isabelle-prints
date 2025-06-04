@@ -20,16 +20,6 @@
                 </div>
                 
                 <div class="footer-section">
-                    <h4>Categories</h4>
-                    <ul>
-                        <li><a href="/isabelle-prints/pages/products.php?category=tshirts">Tshirts</a></li>
-                        <li><a href="/isabelle-prints/pages/products.php?category=towels">Hand Towels</a></li>
-                        <li><a href="/isabelle-prints/pages/products.php?category=mugs">Mugs</a></li>
-                        <li><a href="/isabelle-prints/pages/products.php?category=tumblers">Tumblers</a></li>
-                    </ul>
-                </div>
-                
-                <div class="footer-section">
                     <h4>Contact Us</h4>
                     <div class="contact-info">
                         <p><i class="fas fa-map-marker-alt"></i> JP LAUREL HIGHWAY, MATAAS NA LUPA, Lipa City, Philippines</p>

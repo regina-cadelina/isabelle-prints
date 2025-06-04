@@ -19,6 +19,46 @@ $summary = $stmt->fetch();
 $stmt = $pdo->query("SELECT status, COUNT(*) AS count FROM orders GROUP BY status");
 $statusCounts = $stmt->fetchAll();
 
+// Get total products
+$stmt = $pdo->query("SELECT COUNT(*) AS total_products FROM products");
+$totalProducts = $stmt->fetchColumn();
+
+// Get pending orders
+$stmt = $pdo->query("SELECT COUNT(*) AS pending_orders FROM orders WHERE status = 'pending'");
+$pendingOrders = $stmt->fetchColumn();
+
+// Get best seller product
+$stmt = $pdo->query("
+    SELECT p.name, SUM(oi.quantity) AS total_sold
+    FROM order_items oi
+    JOIN products p ON oi.product_id = p.id
+    GROUP BY p.id
+    ORDER BY total_sold DESC
+    LIMIT 1
+");
+$bestSeller = $stmt->fetch();
+
+// Get least seller product
+$stmt = $pdo->query("
+    SELECT p.name, SUM(oi.quantity) AS total_sold
+    FROM order_items oi
+    JOIN products p ON oi.product_id = p.id
+    GROUP BY p.id
+    ORDER BY total_sold ASC
+    LIMIT 1
+");
+$leastSeller = $stmt->fetch();
+
+// Get orders per month (last 12 months)
+$stmt = $pdo->query("
+    SELECT DATE_FORMAT(created_at, '%Y-%m') AS month, COUNT(*) AS order_count
+    FROM orders
+    GROUP BY month
+    ORDER BY month DESC
+    LIMIT 12
+");
+$ordersPerMonth = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
 $page_title = "Sales Report";
 ?>
 <!DOCTYPE html>
@@ -37,8 +77,7 @@ $page_title = "Sales Report";
                 <h2><i class="fas fa-cog"></i> Admin Panel</h2>
             </div>
             <div class="admin-user">
-                <span>&nbsp Welcome, <?php echo htmlspecialchars($current_user['first_name'] ?? 'Admin'); ?></span>
-                <a href="../logout.php" class="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</a>
+                <a href="../pages/logout.php" class="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</a>
             </div>
         </div>
     </header>
@@ -54,6 +93,46 @@ $totalSales = $summary['total_sales'] ?? 0;
 // Get order count by status
 $stmt = $pdo->query("SELECT status, COUNT(*) AS count FROM orders GROUP BY status");
 $statusCounts = $stmt->fetchAll();
+
+// Get total products
+$stmt = $pdo->query("SELECT COUNT(*) AS total_products FROM products");
+$totalProducts = $stmt->fetchColumn();
+
+// Get pending orders
+$stmt = $pdo->query("SELECT COUNT(*) AS pending_orders FROM orders WHERE status = 'pending'");
+$pendingOrders = $stmt->fetchColumn();
+
+// Get best seller product
+$stmt = $pdo->query("
+    SELECT p.name, SUM(oi.quantity) AS total_sold
+    FROM order_items oi
+    JOIN products p ON oi.product_id = p.id
+    GROUP BY p.id
+    ORDER BY total_sold DESC
+    LIMIT 1
+");
+$bestSeller = $stmt->fetch();
+
+// Get least seller product
+$stmt = $pdo->query("
+    SELECT p.name, SUM(oi.quantity) AS total_sold
+    FROM order_items oi
+    JOIN products p ON oi.product_id = p.id
+    GROUP BY p.id
+    ORDER BY total_sold ASC
+    LIMIT 1
+");
+$leastSeller = $stmt->fetch();
+
+// Get orders per month (last 12 months)
+$stmt = $pdo->query("
+    SELECT DATE_FORMAT(created_at, '%Y-%m') AS month, COUNT(*) AS order_count
+    FROM orders
+    GROUP BY month
+    ORDER BY month DESC
+    LIMIT 12
+");
+$ordersPerMonth = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 $page_title = "Sales Report";
 ?>
@@ -72,6 +151,7 @@ $page_title = "Sales Report";
         <nav class="admin-menu">
             <ul>
                 <li><a href="dashboard.php"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+                <li><a href="categories.php"><i class="fas fa-tags"></i> Manage Categories</a></li>
                 <li><a href="products.php"><i class="fas fa-box"></i> Manage Products</a></li>
                 <li><a href="orders.php"><i class="fas fa-shopping-cart"></i> Manage Orders</a></li>
                 <li><a href="customers.php"><i class="fas fa-users"></i> Customers</a></li>
@@ -86,12 +166,32 @@ $page_title = "Sales Report";
         <main class="admin-main">
             <div class="admin-content">
                 <h1>Sales Report</h1>
-                <p><a href="dashboard.php">&larr; Back to Dashboard</a></p>
                 <div class="admin-form" style="margin-top: 30px;">
                     <h2>Summary</h2>
+                    <button type="reset"class="btn btn-secondary" style="float:right; margin-bottom:15px;" onclick="window.location.href='../tcpdf6/examples/print-reports.php'"><i class="fas fa-print"></i> Print</button>
                     <ul>
+                        <li><strong>Total Products:</strong> <?php echo $totalProducts; ?></li>
                         <li><strong>Total Orders:</strong> <?php echo $totalOrders; ?></li>
-                        <li><strong>Total Sales:</strong> $<?php echo number_format($totalSales, 2); ?></li>
+                        <li><strong>Pending Orders:</strong> <?php echo $pendingOrders; ?></li>
+                        <li><strong>Total Sales:</strong> ₱<?php echo number_format($totalSales, 2); ?></li>
+                        <li><strong>Best Seller Product:</strong>
+                            <?php
+                            if ($bestSeller && $bestSeller['total_sold'] > 0) {
+                                echo htmlspecialchars($bestSeller['name']) . " ({$bestSeller['total_sold']} sold)";
+                            } else {
+                                echo "No sales yet.";
+                            }
+                            ?>
+                        </li>
+                        <li><strong>Least Seller Product:</strong>
+                            <?php
+                            if ($leastSeller && $leastSeller['total_sold'] > 0) {
+                                echo htmlspecialchars($leastSeller['name']) . " ({$leastSeller['total_sold']} sold)";
+                            } else {
+                                echo "No sales yet.";
+                            }
+                            ?>
+                        </li>
                     </ul>
 
                     <h2>Orders by Status</h2>
@@ -117,6 +217,31 @@ $page_title = "Sales Report";
                             <?php endif; ?>
                         </tbody>
                     </table>
+
+                    <!-- Orders Per Month Section -->
+<h2>Orders Per Month (Last 12 Months)</h2>
+<table class="admin-table">
+    <thead>
+        <tr>
+            <th>Month</th>
+            <th>Order Count</th>
+        </tr>
+    </thead>
+    <tbody>
+        <?php if (empty($ordersPerMonth)): ?>
+            <tr>
+                <td colspan="2">No orders found.</td>
+            </tr>
+        <?php else: ?>
+            <?php foreach (array_reverse($ordersPerMonth) as $row): // reverse for oldest to newest ?>
+                <tr>
+                    <td><?php echo htmlspecialchars(date('F Y', strtotime($row['month'] . '-01'))); ?></td>
+                    <td><?php echo $row['order_count']; ?></td>
+                </tr>
+            <?php endforeach; ?>
+        <?php endif; ?>
+    </tbody>
+</table>
                 </div>
             </div>
         </main>
