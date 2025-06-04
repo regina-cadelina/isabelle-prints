@@ -9,6 +9,9 @@ $categoryFilter = isset($_GET['category']) ? $_GET['category'] : null;
 // Get sort option
 $sortOption = isset($_GET['sort']) ? $_GET['sort'] : 'name_asc';
 
+// Get search filter
+$searchFilter = isset($_GET['search']) ? trim($_GET['search']) : null;
+
 // Prepare sorting parameters
 $sortField = 'name';
 $sortDirection = 'ASC';
@@ -46,16 +49,21 @@ try {
               FROM products p 
               LEFT JOIN categories c ON p.category_id = c.id 
               WHERE p.is_active = 1";
-    
+
     $params = [];
-    
+
     if ($categoryFilter) {
         $query .= " AND p.category_id = ?";
         $params[] = $categoryFilter;
     }
-    
+
+    if ($searchFilter) {
+        $query .= " AND p.name LIKE ?";
+        $params[] = '%' . $searchFilter . '%';
+    }
+
     $query .= " ORDER BY p.$sortField $sortDirection";
-    
+
     $stmt = $pdo->prepare($query);
     $stmt->execute($params);
     $products = $stmt->fetchAll();
@@ -63,6 +71,45 @@ try {
     $products = [];
 }
 ?>
+
+<style>
+.products-filters {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.search-section {
+    flex: 1 1 300px;
+}
+
+.filters-right {
+    display: flex;
+    gap: 15px;
+    flex: 1 1 400px;
+    justify-content: flex-end;
+}
+
+.filter-section {
+    display: flex;
+    flex-direction: column;
+}
+
+.filter-section label {
+    margin-bottom: 5px;
+    font-weight: 600;
+}
+
+input[type="text"], select {
+    padding: 6px 10px;
+    font-size: 1rem;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+</style>
 
 <main class="products-page">
     <div class="container">
@@ -72,29 +119,42 @@ try {
         </div>
 
         <div class="products-filters">
-            <div class="filter-section">
-                <label for="category-filter">Category:</label>
-                <select id="category-filter" onchange="filterByCategory(this.value)">
-                    <option value="">All Categories</option>
-                    <?php if (!empty($categories)): ?>
-                        <?php foreach ($categories as $category): ?>
-                            <option value="<?php echo $category['id']; ?>" <?php echo $categoryFilter == $category['id'] ? 'selected' : ''; ?>>
-                                <?php echo htmlspecialchars($category['name']); ?>
-                            </option>
-                        <?php endforeach; ?>
-                    <?php endif; ?>
-                </select>
+            <div class="search-section">
+                <label for="search-input">Search:</label>
+                <input
+                    type="text"
+                    id="search-input"
+                    placeholder="Search products..."
+                    onkeyup="filterBySearch(this.value)"
+                    value="<?php echo htmlspecialchars($searchFilter); ?>"
+                >
             </div>
-            
-            <div class="filter-section">
-                <label for="sort-select">Sort by:</label>
-                <select id="sort-select" onchange="sortProducts(this.value)">
-                    <option value="name_asc" <?php echo $sortOption == 'name_asc' ? 'selected' : ''; ?>>Name (A-Z)</option>
-                    <option value="name_desc" <?php echo $sortOption == 'name_desc' ? 'selected' : ''; ?>>Name (Z-A)</option>
-                    <option value="price_asc" <?php echo $sortOption == 'price_asc' ? 'selected' : ''; ?>>Price (Low to High)</option>
-                    <option value="price_desc" <?php echo $sortOption == 'price_desc' ? 'selected' : ''; ?>>Price (High to Low)</option>
-                    <option value="newest" <?php echo $sortOption == 'newest' ? 'selected' : ''; ?>>Newest First</option>
-                </select>
+
+            <div class="filters-right">
+                <div class="filter-section">
+                    <label for="category-filter">Category:</label>
+                    <select id="category-filter" onchange="filterByCategory(this.value)">
+                        <option value="">All Categories</option>
+                        <?php if (!empty($categories)): ?>
+                            <?php foreach ($categories as $category): ?>
+                                <option value="<?php echo $category['id']; ?>" <?php echo $categoryFilter == $category['id'] ? 'selected' : ''; ?>>
+                                    <?php echo htmlspecialchars($category['name']); ?>
+                                </option>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </select>
+                </div>
+
+                <div class="filter-section">
+                    <label for="sort-select">Sort by:</label>
+                    <select id="sort-select" onchange="sortProducts(this.value)">
+                        <option value="name_asc" <?php echo $sortOption == 'name_asc' ? 'selected' : ''; ?>>Name (A-Z)</option>
+                        <option value="name_desc" <?php echo $sortOption == 'name_desc' ? 'selected' : ''; ?>>Name (Z-A)</option>
+                        <option value="price_asc" <?php echo $sortOption == 'price_asc' ? 'selected' : ''; ?>>Price (Low to High)</option>
+                        <option value="price_desc" <?php echo $sortOption == 'price_desc' ? 'selected' : ''; ?>>Price (High to Low)</option>
+                        <option value="newest" <?php echo $sortOption == 'newest' ? 'selected' : ''; ?>>Newest First</option>
+                    </select>
+                </div>
             </div>
         </div>
 
@@ -137,5 +197,44 @@ try {
         </div>
     </div>
 </div>
+
+<script>
+function getQueryParams() {
+    const params = new URLSearchParams(window.location.search);
+    return params;
+}
+
+function filterByCategory(categoryId) {
+    const params = getQueryParams();
+    if (categoryId) {
+        params.set('category', categoryId);
+    } else {
+        params.delete('category');
+    }
+    params.delete('page'); // reset pagination on filter change
+    window.location.search = params.toString();
+}
+
+function sortProducts(sortVal) {
+    const params = getQueryParams();
+    params.set('sort', sortVal);
+    params.delete('page');
+    window.location.search = params.toString();
+}
+
+function filterBySearch(searchVal) {
+    const params = getQueryParams();
+    if (searchVal.trim() !== '') {
+        params.set('search', searchVal.trim());
+    } else {
+        params.delete('search');
+    }
+    params.delete('page');
+    if (window.filterTimeout) clearTimeout(window.filterTimeout);
+    window.filterTimeout = setTimeout(() => {
+        window.location.search = params.toString();
+    }, 500);
+}
+</script>
 
 <?php include '../includes/footer.php'; ?>
