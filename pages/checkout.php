@@ -208,6 +208,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <label for="billing_address">Billing Address</label>
                         <input type="text" class="form-control" id="billing_address" name="billing_address" required value="<?= htmlspecialchars($_POST['billing_address'] ?? '') ?>">
                     </div>
+                    <div class="mb-3">
+                        <label for="phone">Phone Number</label>
+                        <input type="text" class="form-control" id="phone" name="phone"
+                               required pattern="^\d{11}$" maxlength="11"
+                               title="Phone number must be exactly 11 digits"
+                               value="<?= htmlspecialchars($_POST['phone'] ?? '') ?>">
+                    </div>
 
                     <h4 class="mb-3">Payment Information</h4>
 
@@ -217,7 +224,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     </div>
                     <div class="mb-3">
                         <label for="reference_number">Reference Number</label>
-                        <input type="text" class="form-control" id="reference_number" name="reference_number" required value="<?= htmlspecialchars($_POST['reference_number'] ?? '') ?>">
+                        <input type="text" class="form-control" id="reference_number" name="reference_number"
+                               required pattern=".{10,32}" minlength="10" maxlength="32"
+                               title="Reference number must be between 10 and 32 characters"
+                               value="<?= htmlspecialchars($_POST['reference_number'] ?? '') ?>">
                     </div>
                     <div class="mb-3">
                         <label for="bank_owner_name">Bank Owner Name</label>
