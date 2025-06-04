@@ -49,6 +49,30 @@ $stmt = $pdo->prepare("
 ");
 $stmt->execute([$_SESSION['user_id']]);
 $orders = $stmt->fetchAll();
+
+// Get the most sold product
+$stmt = $pdo->prepare("
+    SELECT p.id, p.product_name, SUM(oi.quantity) AS total_sold
+    FROM order_items oi
+    JOIN products p ON oi.product_id = p.id
+    GROUP BY p.id
+    ORDER BY total_sold DESC
+    LIMIT 1
+");
+$stmt->execute();
+$most_sold_product = $stmt->fetch();
+
+// Get best seller product (new query)
+$stmt = $pdo->prepare("
+    SELECT p.id, p.product_name, SUM(oi.quantity) AS total_sold
+    FROM order_items oi
+    JOIN products p ON oi.product_id = p.id
+    GROUP BY p.id
+    ORDER BY total_sold DESC
+    LIMIT 1
+");
+$stmt->execute();
+$bestSeller = $stmt->fetch();
 ?>
 
 <main class="orders-page">
@@ -105,10 +129,6 @@ $orders = $stmt->fetchAll();
                                     <span>Downpayment Paid:</span>
                                     <span><?php echo formatPrice($order['downpayment_amount']); ?></span>
                                 </div>
-                                <div class="amount-row remaining">
-                                    <span>Remaining Balance:</span>
-                                    <span><?php echo formatPrice($order['total_amount'] - $order['downpayment_amount']); ?></span>
-                                </div>
                             </div>
                         </div>
                         <div class="order-actions">
@@ -128,18 +148,64 @@ $orders = $stmt->fetchAll();
                 <?php endforeach; ?>
             </div>
         <?php endif; ?>
+
+        <!-- Most Sold Product Section - New Feature -->
+        <div class="most-sold-product">
+            <h2>Most Sold Product</h2>
+            <?php if ($most_sold_product): ?>
+                <div class="product-card">
+                    <h3><?php echo htmlspecialchars($most_sold_product['product_name']); ?></h3>
+                    <p>Total Sold: <?php echo (int)$most_sold_product['total_sold']; ?></p>
+                </div>
+            <?php else: ?>
+                <p>No sales data available yet.</p>
+            <?php endif; ?>
+        </div>
+
+        <!-- Best Seller Product Section - New Feature -->
+        <div class="best-seller-product">
+            <h2>Best Seller Product</h2>
+            <ul>
+                <li><strong>Best Seller Product:</strong>
+                    <?php
+                    if ($bestSeller && $bestSeller['total_sold'] > 0) {
+                        echo htmlspecialchars($bestSeller['product_name']) . " ({$bestSeller['total_sold']} sold)";
+                    } else {
+                        echo "No sales yet.";
+                    }
+                    ?>
+                </li>
+            </ul>
+        </div>
     </div>
 </main>
 
 <!-- Order Details Modal -->
 <div id="orderModal" class="modal">
     <div class="modal-content">
-        <span class="close">&times;</span>
+        <span class="close close-order-modal">&times;</span>
         <div id="orderModalContent">
             <!-- Content will be loaded via AJAX -->
         </div>
     </div>
 </div>
+
+<!-- If you don't have existing CSS for the .close class, add this style block before the script tag -->
+<style>
+.modal .close, .modal .close-order-modal {
+    position: absolute;
+    top: 15px;
+    right: 20px;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+    color: #555;
+}
+
+.modal .close:hover, .modal .close-order-modal:hover {
+    color: #000;
+}
+</style>
 
 <script>
 function viewOrderDetails(orderNumber) {
@@ -158,20 +224,36 @@ function viewOrderDetails(orderNumber) {
         });
 }
 
-// Close modal functionality
+function closeOrderModal() {
+    const modal = document.getElementById('orderModal');
+    modal.style.display = 'none';
+}
+
+// Close modal functionality - Fixed version
 document.addEventListener('DOMContentLoaded', function() {
     const modal = document.getElementById('orderModal');
-    const closeBtn = document.querySelector('.close');
+    const closeBtn = document.querySelector('.close-order-modal');
+    
+    // Close button click
     if (closeBtn) {
-        closeBtn.onclick = function() {
-            modal.style.display = 'none';
-        }
+        closeBtn.addEventListener('click', function() {
+            closeOrderModal();
+        });
     }
-    window.onclick = function(event) {
-        if (event.target == modal) {
-            modal.style.display = 'none';
+    
+    // Click outside modal to close
+    window.addEventListener('click', function(event) {
+        if (event.target === modal) {
+            closeOrderModal();
         }
-    }
+    });
+    
+    // ESC key to close
+    document.addEventListener('keydown', function(event) {
+        if (event.key === 'Escape' && modal.style.display === 'block') {
+            closeOrderModal();
+        }
+    });
 });
 </script>
 

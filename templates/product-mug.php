@@ -40,7 +40,7 @@
             </ul>
         </div>
         
-        <form id="addToCartForm" class="product-form">
+        <form id="addToCartForm" class="product-form" method="POST" enctype="multipart/form-data">
             <input type="hidden" name="product_id" value="<?php echo $product['id']; ?>">
             
             <div class="form-group">
@@ -77,22 +77,32 @@
             </div>
             
             <div class="form-group">
-                <label for="custom_file">Upload Custom Image:</label>
+                <label for="custom_file">Upload Custom Image (JPG, PNG, PDF):</label>
                 <div style="display: flex; align-items: center; gap: 10px;">
                     <!-- Image Preview -->
                     <div id="customImagePreview" style="margin-right:10px;">
                         <img id="previewImg" src="#" alt="Preview" style="display:none; max-width:60px; max-height:60px; border:1px solid #ccc; border-radius:8px;"/>
                     </div>
-                    <!-- File Input and Upload Button -->
-                    <input type="file" name="custom_file" id="custom_file" accept=".jpg,.jpeg,.png,.pdf" style="margin-right:5px;">
+                    <!-- File Input -->
+                    <input type="file" class="form-control" name="custom_file" id="custom_file" accept=".jpg,.jpeg,.png,.pdf">
                 </div>
             </div>
             
             <div class="form-actions">
-                <button type="button" class="btn btn-primary" onclick="addToCartModal()">ADD TO CART</button>
+                <button type="button" class="btn btn-primary"
+                    onclick="addToCartModal()"
+                    <?php if (empty($product['stock_quantity']) || $product['stock_quantity'] <= 0) echo 'disabled style="opacity:0.5;cursor:not-allowed;"'; ?>>
+                    ADD TO CART
+                </button>
                 <button type="button" class="btn btn-secondary" onclick="closeModal()">VIEW DETAILS</button>
             </div>
         </form>
+
+        <?php if (empty($product['stock_quantity']) || $product['stock_quantity'] <= 0): ?>
+            <div class="out-of-stock-message" style="color:red; margin-top:10px;">
+                This product is out of stock and cannot be ordered.
+            </div>
+        <?php endif; ?>
     </div>
 </div>
 
@@ -112,14 +122,53 @@ document.getElementById('custom_file').addEventListener('change', function(event
         preview.style.display = 'none';
     }
 });
-
-// Dummy upload handler for modal demo (replace with AJAX if needed)
-function uploadCustomFile() {
-    const fileInput = document.getElementById('custom_file');
-    if (!fileInput.files.length) {
-        alert('Please select a file to upload.');
-        return;
-    }
-    alert('File ready to upload! (Implement AJAX upload as needed)');
-}
 </script>
+
+<?php
+$customImageFile = null;
+$error = null;
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['custom_file']) && $_FILES['custom_file']['error'] === UPLOAD_ERR_OK) {
+    $uploadDir = __DIR__ . '/../uploads/custom/';
+    if (!is_dir($uploadDir)) {
+        mkdir($uploadDir, 0755, true);
+    }
+
+    $fileExtension = strtolower(pathinfo($_FILES['custom_file']['name'], PATHINFO_EXTENSION));
+    $allowedExtensions = ['jpg', 'jpeg', 'png', 'pdf'];
+
+    if (in_array($fileExtension, $allowedExtensions)) {
+        $fileName = 'custom_' . time() . '_' . uniqid() . '.' . $fileExtension;
+        $uploadPath = $uploadDir . $fileName;
+
+        if (move_uploaded_file($_FILES['custom_file']['tmp_name'], $uploadPath)) {
+            $customImageFile = $fileName;
+
+            // Store file name and customization info in the order_items table
+            $productId = $_POST['product_id'];
+            $size = $_POST['size'] ?? null;
+            $color = $_POST['color'] ?? null;
+            $quantity = $_POST['quantity'] ?? 1;
+            $notes = $_POST['notes'] ?? null;
+
+            // Use your actual DB connection (PDO recommended)
+            require_once __DIR__ . '/../config/database.php'; // adjust path as needed
+
+            // Example: Insert into order_items (make sure these columns exist)
+            $stmt = $pdo->prepare("INSERT INTO order_items (product_id, size, color, quantity, customization_notes, file_upload) VALUES (?, ?, ?, ?, ?, ?)");
+            $stmt->execute([
+                $productId,
+                $size,
+                $color,
+                $quantity,
+                $notes,
+                $customImageFile
+            ]);
+        } else {
+            $error = 'Failed to upload custom file.';
+        }
+    } else {
+        $error = 'Invalid file type. Only JPG, PNG, and PDF are allowed.';
+    }
+}
+?>
