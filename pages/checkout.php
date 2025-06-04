@@ -27,6 +27,7 @@ function generateOrderNumber($pdo) {
 }
 
 $error = null;
+$debug_info = [];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $shippingAddress = trim($_POST['shipping_address'] ?? '');
@@ -36,7 +37,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $bankName = trim($_POST['bank_name'] ?? '');
     $phone = trim($_POST['phone'] ?? '');
 
-    // Validate required fields
+    // Debug: Check if file was uploaded
+    $debug_info[] = "Files array: " . print_r($_FILES, true);
+    $debug_info[] = "POST array: " . print_r($_POST, true);
+
     if (empty($shippingAddress)) {
         $error = 'Shipping address is required.';
     } elseif (empty($billingAddress)) {
@@ -54,33 +58,77 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $paymentProofFile = null;
 
     if (!$error) {
-        if (isset($_FILES['payment_proof_file']) && $_FILES['payment_proof_file']['error'] === UPLOAD_ERR_OK) {
+        // Debug file upload
+        if (!isset($_FILES['payment_proof'])) {
+            $error = 'No file was uploaded. Please select a payment proof file.';
+            $debug_info[] = "No payment_proof in FILES array";
+        } elseif ($_FILES['payment_proof']['error'] !== UPLOAD_ERR_OK) {
+            $upload_errors = [
+                UPLOAD_ERR_INI_SIZE => 'The uploaded file exceeds the upload_max_filesize directive in php.ini',
+                UPLOAD_ERR_FORM_SIZE => 'The uploaded file exceeds the MAX_FILE_SIZE directive',
+                UPLOAD_ERR_PARTIAL => 'The uploaded file was only partially uploaded',
+                UPLOAD_ERR_NO_FILE => 'No file was uploaded',
+                UPLOAD_ERR_NO_TMP_DIR => 'Missing a temporary folder',
+                UPLOAD_ERR_CANT_WRITE => 'Failed to write file to disk',
+                UPLOAD_ERR_EXTENSION => 'A PHP extension stopped the file upload'
+            ];
+            $error_code = $_FILES['payment_proof']['error'];
+            $error = 'File upload error: ' . ($upload_errors[$error_code] ?? 'Unknown error');
+            $debug_info[] = "Upload error code: " . $error_code;
+        } else {
+            // File upload is OK, proceed with processing
             $uploadDir = '../uploads/payment-proofs/';
+            
+            // Create directory if it doesn't exist
             if (!is_dir($uploadDir)) {
-                mkdir($uploadDir, 0755, true);
-            }
-
-            $fileExtension = strtolower(pathinfo($_FILES['payment_proof_file']['name'], PATHINFO_EXTENSION));
-            $allowedExtensions = ['jpg', 'jpeg', 'png', 'pdf'];
-
-            if (in_array($fileExtension, $allowedExtensions)) {
-                $fileName = 'payment_' . time() . '_' . uniqid() . '.' . $fileExtension;
-                $uploadPath = $uploadDir . $fileName;
-
-                if (move_uploaded_file($_FILES['payment_proof_file']['tmp_name'], $uploadPath)) {
-                    $paymentProofFile = $fileName;
+                if (!mkdir($uploadDir, 0755, true)) {
+                    $error = 'Failed to create upload directory.';
+                    $debug_info[] = "Failed to create directory: " . $uploadDir;
                 } else {
-                    $error = 'Failed to upload payment proof file.';
+                    $debug_info[] = "Created directory: " . $uploadDir;
                 }
             } else {
-                $error = 'Invalid file type. Only JPG, PNG, and PDF allowed.';
+                $debug_info[] = "Directory exists: " . $uploadDir;
             }
-        } else {
-            $error = 'Please upload your payment proof.';
+
+            if (!$error) {
+                // Check if directory is writable
+                if (!is_writable($uploadDir)) {
+                    $error = 'Upload directory is not writable.';
+                    $debug_info[] = "Directory not writable: " . $uploadDir;
+                } else {
+                    $debug_info[] = "Directory is writable: " . $uploadDir;
+                    
+                    $fileExtension = strtolower(pathinfo($_FILES['payment_proof']['name'], PATHINFO_EXTENSION));
+                    $allowedExtensions = ['jpg', 'jpeg', 'png', 'pdf'];
+
+                    if (!in_array($fileExtension, $allowedExtensions)) {
+                        $error = 'Invalid file type. Only JPG, PNG, and PDF files are allowed.';
+                        $debug_info[] = "Invalid file extension: " . $fileExtension;
+                    } else {
+                        $fileName = 'payment_' . time() . '_' . uniqid() . '.' . $fileExtension;
+                        $uploadPath = $uploadDir . $fileName;
+                        
+                        $debug_info[] = "Attempting to move file to: " . $uploadPath;
+                        $debug_info[] = "Temp file: " . $_FILES['payment_proof']['tmp_name'];
+                        $debug_info[] = "File size: " . $_FILES['payment_proof']['size'];
+
+                        if (move_uploaded_file($_FILES['payment_proof']['tmp_name'], $uploadPath)) {
+                            $paymentProofFile = $fileName;
+                            $debug_info[] = "File uploaded successfully: " . $fileName;
+                        } else {
+                            $error = 'Failed to upload payment proof file. Please try again.';
+                            $debug_info[] = "move_uploaded_file failed";
+                            $debug_info[] = "Source exists: " . (file_exists($_FILES['payment_proof']['tmp_name']) ? 'yes' : 'no');
+                            $debug_info[] = "Destination writable: " . (is_writable(dirname($uploadPath)) ? 'yes' : 'no');
+                        }
+                    }
+                }
+            }
         }
     }
 
-    if (!$error) {
+    if (!$error && $paymentProofFile) {
         try {
             $pdo->beginTransaction();
 
@@ -98,8 +146,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 if (!empty($item['customization_notes'])) {
                     $orderCustomizationNotes[] = $item['product']['name'] . ': ' . $item['customization_notes'];
                 }
-                if (!empty($item['custom_image']) && !$orderCustomImage) {
-                    $orderCustomImage = $item['custom_image'];
+                if (!empty($item['custom_image_file']) && !$orderCustomImage) {
+                    $orderCustomImage = $item['custom_image_file'];
                 }
             }
             
@@ -140,7 +188,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 INSERT INTO order_items (
                     order_id, product_id, quantity,
                     unit_price, total_price, selected_options,
-                    customization_notes, custom_image,
+                    customization_notes, custom_image_file,
                     selected_size, selected_color, selected_finish, selected_material
                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ");
@@ -160,7 +208,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $totalPrice,
                     json_encode($options),
                     $item['customization_notes'] ?? null,
-                    $item['custom_image'] ?? null,
+                    $item['custom_image_file'] ?? null,
                     $options['size'] ?? null,
                     $options['color'] ?? null,
                     $options['finish'] ?? null,
@@ -172,7 +220,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $updateStockStmt->execute([$quantity, $item['product']['id']]);
             }
 
-            // Clear cart function or fallback
             if (function_exists('clearCart')) {
                 clearCart($pdo, $_SESSION['user_id']);
             } else {
@@ -180,15 +227,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
 
             $pdo->commit();
-
             header('Location: order_confirmation.php?order_id=' . $orderId);
             exit();
-
         } catch (PDOException $e) {
             $pdo->rollBack();
-            $error = 'An error occurred while processing your order. Please try again.';
-            // Log the error for debugging:
-            error_log('Checkout Error: ' . $e->getMessage());
+            $error = 'An error occurred while processing your order.';
+            error_log("Checkout Error: " . $e->getMessage());
         }
     }
 }
@@ -197,11 +241,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8" />
+    <meta charset="UTF-8">
     <title>Checkout - Isabelle Concept & Prints</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet" />
-    <link href="../assets/css/style.css" rel="stylesheet" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="../assets/css/style.css">
 </head>
 <body>
 
@@ -211,7 +255,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <h1>Checkout</h1>
 
     <?php if ($error): ?>
-        <div class="alert alert-danger"><?= htmlspecialchars($error) ?></div>
+        <div class="alert alert-danger">
+            <?= htmlspecialchars($error) ?>
+            <?php if (!empty($debug_info) && ($_SESSION['user_type'] ?? '') === 'admin'): ?>
+                <details style="margin-top: 10px;">
+                    <summary>Debug Information (Admin Only)</summary>
+                    <pre style="font-size: 12px; background: #f8f9fa; padding: 10px; margin-top: 10px;">
+                        <?= htmlspecialchars(implode("\n", $debug_info)) ?>
+                    </pre>
+                </details>
+            <?php endif; ?>
+        </div>
     <?php endif; ?>
 
     <?php if (empty($cartItems)): ?>
@@ -232,7 +286,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 <?php if (!empty($item['customization_notes'])): ?>
                                     <br><small class="text-info">Custom: <?= htmlspecialchars(substr($item['customization_notes'], 0, 50)) ?>...</small>
                                 <?php endif; ?>
-                                <?php if (!empty($item['custom_image'])): ?>
+                                <?php if (!empty($item['custom_image_file'])): ?>
                                     <br><small class="text-success">Custom image uploaded</small>
                                 <?php endif; ?>
                             </div>
@@ -251,7 +305,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
             <div class="col-md-8 order-md-1">
                 <h4 class="mb-3">Billing Information</h4>
-                <form method="POST" enctype="multipart/form-data" novalidate>
+                <form method="POST" enctype="multipart/form-data">
                     <div class="mb-3">
                         <label for="shipping_address">Shipping Address</label>
                         <input type="text" class="form-control" id="shipping_address" name="shipping_address" required value="<?= htmlspecialchars($_POST['shipping_address'] ?? '') ?>">
@@ -268,13 +322,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <h4 class="mb-3">Payment Information</h4>
 
                     <div class="mb-3">
-<<<<<<< HEAD
-                        <label for="payment_proof_file">Payment Proof (JPG, PNG, PDF)</label>
-                        <input type="file" class="form-control" id="payment_proof_file" name="payment_proof_file" accept=".jpg, .jpeg, .png, .pdf" required>
-=======
-                        <label for="payment_proof">Payment Proof (JPG, PNG, PDF)</label>
+                        <label for="payment_proof">Payment Proof (JPG, PNG, PDF) - Max 10MB</label>
                         <input type="file" class="form-control" id="payment_proof" name="payment_proof" accept=".jpg,.jpeg,.png,.pdf" required>
->>>>>>> 903e1ee3e69c4305fa48629f1f32faf6e63c973e
+                        <small class="form-text text-muted">Please upload a clear image or PDF of your payment receipt.</small>
                     </div>
                     <div class="mb-3">
                         <label for="reference_number">Reference Number</label>
@@ -300,6 +350,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <?php include('../includes/footer.php'); ?>
 
 <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.3/dist/umd/popper.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
+<script>
+// Add file validation
+document.getElementById('payment_proof').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (file) {
+        const maxSize = 10 * 1024 * 1024; // 10MB
+        const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf'];
+        
+        if (file.size > maxSize) {
+            alert('File size must be less than 10MB');
+            e.target.value = '';
+            return;
+        }
+        
+        if (!allowedTypes.includes(file.type)) {
+            alert('Only JPG, PNG, and PDF files are allowed');
+            e.target.value = '';
+            return;
+        }
+        
+        // Show file name
+        const fileName = file.name;
+        const fileSize = (file.size / 1024 / 1024).toFixed(2);
+        console.log(`Selected file: ${fileName} (${fileSize} MB)`);
+    }
+});
+</script>
 </body>
 </html>
