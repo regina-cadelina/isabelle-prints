@@ -208,9 +208,9 @@ function changeQuantity(change) {
   }
 }
 
-// Update cart count in header
+// Update cart count in header - FIXED PATH
 function updateCartCount() {
-  fetch("/isabelle-prints/api/get-cart-count.php")
+  fetch("/isabelle-prints/api/cart-count.php")
     .then((response) => response.json())
     .then((data) => {
       const cartCountElement = document.querySelector(".cart-count")

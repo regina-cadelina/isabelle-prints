@@ -38,9 +38,11 @@ require_once 'config/database.php';
                                 <a href="/isabelle-prints/pages/products.php?category=<?php echo $category['id']; ?>">
                                     <div class="category-image">
                                         <?php if (!empty($category['image_url'])): ?>
-                                            <img src="/isabelle-prints/uploads/categories/<?php echo htmlspecialchars($category['image_url']); ?>" alt="<?php echo htmlspecialchars($category['name']); ?>" style="width:60px;height:60px;object-fit:cover;">
+                                            <img src="/isabelle-prints/uploads/categories/<?php echo htmlspecialchars($category['image_url']); ?>" alt="<?php echo htmlspecialchars($category['name']); ?>">
                                         <?php else: ?>
-                                            <i class="fas fa-<?php echo $category['icon'] ?? 'image'; ?>"></i>
+                                            <div class="placeholder-icon">
+                                                <i class="fas fa-<?php echo $category['icon'] ?? 'image'; ?>"></i>
+                                            </div>
                                         <?php endif; ?>
                                     </div>
                                     <h3><?php echo htmlspecialchars($category['name']); ?></h3>
