@@ -12,7 +12,7 @@ $current_user = getCurrentUser();
 $stats = [];
 
 // Total products
-$stmt = $pdo->query("SELECT COUNT(*) as count FROM products WHERE status = 'active'");
+$stmt = $pdo->query("SELECT COUNT(*) as count FROM products WHERE is_active = 1");
 $stats['total_products'] = $stmt->fetch()['count'];
 
 // Total orders
@@ -103,44 +103,51 @@ $page_title = "Admin Dashboard";
                 <h1>Dashboard Overview</h1>
                 
                 <!-- Statistics Cards -->
-                <div class="stats-grid">
-                    <div class="stat-card">
-                        <div class="stat-icon products">
-                            <i class="fas fa-box"></i>
-                        </div>
-                        <div class="stat-info">
-                            <h3><?php echo $stats['total_products']; ?></h3>
-                            <p>Total Products</p>
-                        </div>
+                <div class="admin-card" style="margin-bottom: 30px;">
+                    <div class="admin-card-header">
+                        <i class="fas fa-chart-line"></i> Quick Statistics
                     </div>
-                    
-                    <div class="stat-card">
-                        <div class="stat-icon orders">
-                            <i class="fas fa-shopping-cart"></i>
-                        </div>
-                        <div class="stat-info">
-                            <h3><?php echo $stats['total_orders']; ?></h3>
-                            <p>Total Orders</p>
-                        </div>
-                    </div>
-                    
-                    <div class="stat-card">
-                        <div class="stat-icon pending">
-                            <i class="fas fa-clock"></i>
-                        </div>
-                        <div class="stat-info">
-                            <h3><?php echo $stats['pending_orders']; ?></h3>
-                            <p>Pending Orders</p>
-                        </div>
-                    </div>
-                    
-                    <div class="stat-card">
-                        <div class="stat-icon customers">
-                            <i class="fas fa-users"></i>
-                        </div>
-                        <div class="stat-info">
-                            <h3><?php echo $stats['total_customers']; ?></h3>
-                            <p>Total Customers</p>
+                    <div class="admin-card-body">
+                        <div class="stats-grid">
+                            <div class="stat-card">
+                                <div class="stat-icon products">
+                                    <i class="fas fa-box"></i>
+                                </div>
+                                <div class="stat-info">
+                                    <h3><?php echo $stats['total_products']; ?></h3>
+                                    <p>Products Offered</p>
+                                </div>
+                            </div>
+                            
+                            <div class="stat-card">
+                                <div class="stat-icon orders">
+                                    <i class="fas fa-shopping-cart"></i>
+                                </div>
+                                <div class="stat-info">
+                                    <h3><?php echo $stats['total_orders']; ?></h3>
+                                    <p>Total Orders</p>
+                                </div>
+                            </div>
+                            
+                            <div class="stat-card">
+                                <div class="stat-icon pending">
+                                    <i class="fas fa-clock"></i>
+                                </div>
+                                <div class="stat-info">
+                                    <h3><?php echo $stats['pending_orders']; ?></h3>
+                                    <p>Pending Orders</p>
+                                </div>
+                            </div>
+                            
+                            <div class="stat-card">
+                                <div class="stat-icon customers">
+                                    <i class="fas fa-users"></i>
+                                </div>
+                                <div class="stat-info">
+                                    <h3><?php echo $stats['total_customers']; ?></h3>
+                                    <p>Total Customers</p>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -148,86 +155,98 @@ $page_title = "Admin Dashboard";
                 <!-- Recent Orders and Low Stock -->
                 <div class="dashboard-grid">
                     <!-- Recent Orders -->
-                    <div class="dashboard-section">
-                        <h2>Recent Orders</h2>
-                        <div class="table-container">
-                            <table class="admin-table">
-                                <thead>
-                                    <tr>
-                                        <th>Order #</th>
-                                        <th>Customer</th>
-                                        <th>Status</th>
-                                        <th>Total</th>
-                                        <th>Date</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <?php foreach ($recent_orders as $order): ?>
-                                    <tr>
-                                        <td>#<?php echo htmlspecialchars($order['order_number']); ?></td>
-                                        <td><?php echo htmlspecialchars(trim($order['first_name'] . ' ' . $order['last_name'])); ?></td>
-                                        <td><span class="status-badge <?php echo htmlspecialchars($order['status']); ?>"><?php echo ucfirst($order['status']); ?></span></td>
-                                        <td><?php echo formatPrice($order['total_amount']); ?></td>
-                                        <td><?php echo date('M j, Y', strtotime($order['created_at'])); ?></td>
-                                    </tr>
-                                    <?php endforeach; ?>
-                                </tbody>
-                            </table>
+                    <div class="admin-card">
+                        <div class="admin-card-header">
+                            <i class="fas fa-shopping-cart"></i> Recent Orders
                         </div>
-                        <a href="orders.php" class="view-all-btn">View All Orders</a>
+                        <div class="admin-card-body">
+                            <div class="table-container">
+                                <table class="admin-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Order #</th>
+                                            <th>Customer</th>
+                                            <th>Status</th>
+                                            <th>Total</th>
+                                            <th>Date</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <?php if (empty($recent_orders)): ?>
+                                            <tr>
+                                                <td colspan="5" style="text-align: center; color: #7f8c8d; font-style: italic;">No recent orders</td>
+                                            </tr>
+                                        <?php else: ?>
+                                            <?php foreach ($recent_orders as $order): ?>
+                                            <tr>
+                                                <td>#<?php echo htmlspecialchars($order['order_number']); ?></td>
+                                                <td><?php echo htmlspecialchars(trim($order['first_name'] . ' ' . $order['last_name'])); ?></td>
+                                                <td>
+                                                    <span class="status-badge <?php echo htmlspecialchars($order['status']); ?>">
+                                                        <?php echo ucfirst($order['status']); ?>
+                                                    </span>
+                                                </td>
+                                                <td class="price-cell"><?php echo formatPrice($order['total_amount']); ?></td>
+                                                <td><?php echo date('M j, Y', strtotime($order['created_at'])); ?></td>
+                                            </tr>
+                                            <?php endforeach; ?>
+                                        <?php endif; ?>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div style="margin-top: 15px; text-align: center;">
+                                <a href="orders.php" class="view-all-btn">View All Orders</a>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Low Stock Alert -->
-                    <div class="dashboard-section">
-                        <h2>Low Stock Alert</h2>
-                        <div class="table-container">
-                            <table class="admin-table">
-                                <thead>
-                                    <tr>
-                                        <th>Product Name</th>
-                                        <th>Category</th>
-                                        <th>SKU</th>
-                                        <th>Price</th>
-                                        <th>Stock</th>
-                                        <th>Action</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <?php if (empty($low_stock)): ?>
-                                        <tr>
-                                            <td colspan="6" style="text-align:center;">No low stock products.</td>
-                                        </tr>
-                                    <?php else: ?>
-                                        <?php foreach ($low_stock as $product): ?>
-                                        <tr>
-                                            <td><?php echo htmlspecialchars($product['product_name']); ?></td>
-                                            <td><?php echo htmlspecialchars($product['category_name']); ?></td>
-                                            <td><?php echo htmlspecialchars($product['sku']); ?></td>
-                                            <td>₱<?php echo number_format($product['base_price'], 2); ?></td>
-                                            <td>
-                                                <span class="stock-low"><?php echo (int)$product['stock_quantity']; ?></span>
-                                            </td>
-                                            <td>
-                                                <a href="products.php?edit=<?php echo $product['product_id']; ?>" class="btn-small">Update</a>
-                                            </td>
-                                        </tr>
-                                        <?php endforeach; ?>
-                                    <?php endif; ?>
-                                </tbody>
-                            </table>
+                    <div class="admin-card">
+                        <div class="admin-card-header">
+                            <i class="fas fa-exclamation-triangle"></i> Low Stock Alert
                         </div>
-                        <a href="products.php" class="view-all-btn">Manage Products</a>
+                        <div class="admin-card-body">
+                            <div class="table-container">
+                                <table class="admin-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Product</th>
+                                            <th>Category</th>
+                                            <th>Stock</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <?php if (empty($low_stock)): ?>
+                                            <tr>
+                                                <td colspan="3" style="text-align: center; color: #7f8c8d; font-style: italic;">All products have sufficient stock</td>
+                                            </tr>
+                                        <?php else: ?>
+                                            <?php foreach ($low_stock as $product): ?>
+                                            <tr>
+                                                <td>
+                                                    <strong><?php echo htmlspecialchars($product['product_name']); ?></strong>
+                                                    <?php if (!empty($product['sku'])): ?>
+                                                        <br><small style="color: #7f8c8d;">SKU: <?php echo htmlspecialchars($product['sku']); ?></small>
+                                                    <?php endif; ?>
+                                                </td>
+                                                <td><?php echo htmlspecialchars($product['category_name']); ?></td>
+                                                <td>
+                                                    <span class="stock-low"><?php echo (int)$product['stock_quantity']; ?></span>
+                                                </td>
+                                            </tr>
+                                            <?php endforeach; ?>
+                                        <?php endif; ?>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div style="margin-top: 15px; text-align: center;">
+                                <a href="products.php" class="view-all-btn">Manage Products</a>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
         </main>
     </div>
-
-    <?php
-    if (isset($_GET['edit'])) {
-        $product_id = (int)$_GET['edit'];
-        // Fetch product details from the database and show the edit form
-    }
-    ?>
 </body>
 </html>

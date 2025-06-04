@@ -14,6 +14,8 @@ if (isset($_SESSION['user_id'])) {
 // Get total orders and total sales
 $stmt = $pdo->query("SELECT COUNT(*) AS total_orders, SUM(total_amount) AS total_sales FROM orders");
 $summary = $stmt->fetch();
+$totalOrders = $summary['total_orders'] ?? 0;
+$totalSales = $summary['total_sales'] ?? 0;
 
 // Get order count by status
 $stmt = $pdo->query("SELECT status, COUNT(*) AS count FROM orders GROUP BY status");
@@ -51,7 +53,7 @@ $leastSeller = $stmt->fetch();
 
 // Get orders per month (last 12 months)
 $stmt = $pdo->query("
-    SELECT DATE_FORMAT(created_at, '%Y-%m') AS month, COUNT(*) AS order_count
+    SELECT DATE_FORMAT(created_at, '%Y-%m') AS month, COUNT(*) AS order_count, SUM(total_amount) AS month_sales
     FROM orders
     GROUP BY month
     ORDER BY month DESC
@@ -62,6 +64,8 @@ $ordersPerMonth = $stmt->fetchAll(PDO::FETCH_ASSOC);
 // Get inventory report (total stock per product)
 $stmt = $pdo->query("SELECT product_name, stock_quantity FROM products WHERE is_active = 1 ORDER BY product_name ASC");
 $inventory = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+$page_title = "Sales Report";
 ?>
 
 <!DOCTYPE html>
@@ -70,10 +74,11 @@ $inventory = $stmt->fetchAll(PDO::FETCH_ASSOC);
     <meta charset="UTF-8">
     <link rel="stylesheet" href="../assets/css/style.css">
     <link rel="stylesheet" href="../assets/css/admin.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
 </head>
 <body class="admin-body">
-        <!-- Admin Header -->
-        <header class="admin-header">
+    <!-- Admin Header -->
+    <header class="admin-header">
         <div class="admin-nav">
             <div class="admin-brand">
                 <h2><i class="fas fa-cog"></i> Admin Panel</h2>
@@ -136,6 +141,7 @@ $stmt = $pdo->query("
 ");
 $ordersPerMonth = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+$page_title = "Sales Report";
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -166,125 +172,228 @@ $ordersPerMonth = $stmt->fetchAll(PDO::FETCH_ASSOC);
     <div class="admin-container">
         <main class="admin-main">
             <div class="admin-content">
-                <h1>Sales Report</h1>
-                <div class="admin-form" style="margin-top: 30px;">
-                    <h2>Summary</h2>
-                    <button type="reset"class="btn btn-secondary" style="float:right; margin-bottom:15px;" onclick="window.location.href='../tcpdf6/examples/print-reports.php'"><i class="fas fa-print"></i> Print</button>
-                    <ul>
-                        <li><strong>Total Products:</strong> <?php echo $totalProducts; ?></li>
-                        <li><strong>Total Orders:</strong> <?php echo $totalOrders; ?></li>
-                        <li><strong>Pending Orders:</strong> <?php echo $pendingOrders; ?></li>
-                        <li><strong>Total Sales:</strong> ₱<?php echo number_format($totalSales, 2); ?></li>
-                        <li><strong>Best Seller Product:</strong>
-                            <?php
-                            if ($bestSeller && $bestSeller['total_sold'] > 0) {
-                                echo htmlspecialchars($bestSeller['name']) . " ({$bestSeller['total_sold']} sold)";
-                            } else {
-                                echo "No sales yet.";
-                            }
-                            ?>
-                        </li>
-                        <li><strong>Least Seller Product:</strong>
-                            <?php
-                            if ($leastSeller && $leastSeller['total_sold'] > 0) {
-                                echo htmlspecialchars($leastSeller['name']) . " ({$leastSeller['total_sold']} sold)";
-                            } else {
-                                echo "No sales yet.";
-                            }
-                            ?>
-                        </li>
-                    </ul>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+                    <h1>Sales Report</h1>
+                    <button type="button" class="btn-primary" onclick="window.location.href='../tcpdf6/examples/print-reports.php'">
+                        <i class="fas fa-print"></i> Print Report
+                    </button>
+                </div>
 
-                    <h2>Orders by Status</h2>
-                    <table class="admin-table">
-                        <thead>
-                            <tr>
-                                <th>Status</th>
-                                <th>Order Count</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php if (empty($statusCounts)): ?>
-                                <tr>
-                                    <td colspan="2">No orders found.</td>
-                                </tr>
-                            <?php else: ?>
-                                <?php foreach ($statusCounts as $row): ?>
+                <!-- Summary Cards Section -->
+                <div class="admin-card" style="margin-bottom: 30px;">
+                    <div class="admin-card-header">
+                        <i class="fas fa-chart-line"></i> Business Summary
+                    </div>
+                    <div class="admin-card-body">
+                        <div class="stats-grid">
+                            <div class="stat-card">
+                                <div class="stat-icon products">
+                                    <i class="fas fa-box"></i>
+                                </div>
+                                <div class="stat-info">
+                                    <h3><?php echo $totalProducts; ?></h3>
+                                    <p>Total Products</p>
+                                </div>
+                            </div>
+
+                            <div class="stat-card">
+                                <div class="stat-icon orders">
+                                    <i class="fas fa-shopping-cart"></i>
+                                </div>
+                                <div class="stat-info">
+                                    <h3><?php echo $totalOrders; ?></h3>
+                                    <p>Total Orders</p>
+                                </div>
+                            </div>
+
+                            <div class="stat-card">
+                                <div class="stat-icon pending">
+                                    <i class="fas fa-clock"></i>
+                                </div>
+                                <div class="stat-info">
+                                    <h3><?php echo $pendingOrders; ?></h3>
+                                    <p>Pending Orders</p>
+                                </div>
+                            </div>
+
+                            <div class="stat-card">
+                                <div class="stat-icon">
+                                    <i class="fas fa-peso-sign"></i>
+                                </div>
+                                <div class="stat-info">
+                                    <h3>₱<?php echo number_format($totalSales, 2); ?></h3>
+                                    <p>Total Sales</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Best and Least Seller Cards -->
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 25px;">
+                            <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; border-left: 4px solid #27ae60;">
+                                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+                                    <i class="fas fa-trophy" style="color: #f39c12; font-size: 1.2rem;"></i>
+                                    <h4 style="margin: 0; color: #2c3e50;">Best Seller</h4>
+                                </div>
+                                <p style="margin: 0; font-weight: 600; color: #27ae60;">
+                                    <?php
+                                    if ($bestSeller && $bestSeller['total_sold'] > 0) {
+                                        echo htmlspecialchars($bestSeller['name']) . " ({$bestSeller['total_sold']} sold)";
+                                    } else {
+                                        echo "No sales yet";
+                                    }
+                                    ?>
+                                </p>
+                            </div>
+
+                            <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; border-left: 4px solid #e74c3c;">
+                                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+                                    <i class="fas fa-chart-line-down" style="color: #e74c3c; font-size: 1.2rem;"></i>
+                                    <h4 style="margin: 0; color: #2c3e50;">Least Seller</h4>
+                                </div>
+                                <p style="margin: 0; font-weight: 600; color: #e74c3c;">
+                                    <?php
+                                    if ($leastSeller && $leastSeller['total_sold'] > 0) {
+                                        echo htmlspecialchars($leastSeller['name']) . " ({$leastSeller['total_sold']} sold)";
+                                    } else {
+                                        echo "No sales yet";
+                                    }
+                                    ?>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Orders by Status Section -->
+                <div class="admin-card" style="margin-bottom: 30px;">
+                    <div class="admin-card-header">
+                        <i class="fas fa-list-alt"></i> Orders by Status
+                    </div>
+                    <div class="admin-card-body">
+                        <div class="table-container">
+                            <table class="admin-table">
+                                <thead>
                                     <tr>
-                                        <td><?php echo htmlspecialchars($row['status']); ?></td>
-                                        <td><?php echo $row['count']; ?></td>
+                                        <th>Status</th>
+                                        <th>Order Count</th>
                                     </tr>
-                                <?php endforeach; ?>
-                            <?php endif; ?>
-                        </tbody>
-                    </table>
+                                </thead>
+                                <tbody>
+                                    <?php if (empty($statusCounts)): ?>
+                                        <tr>
+                                            <td colspan="2" style="text-align: center; color: #7f8c8d; font-style: italic;">No orders found</td>
+                                        </tr>
+                                    <?php else: ?>
+                                        <?php foreach ($statusCounts as $row): ?>
+                                            <tr>
+                                                <td>
+                                                    <span class="status-badge <?php echo strtolower($row['status']); ?>">
+                                                        <?php echo ucfirst(htmlspecialchars($row['status'])); ?>
+                                                    </span>
+                                                </td>
+                                                <td><strong><?php echo $row['count']; ?></strong></td>
+                                            </tr>
+                                        <?php endforeach; ?>
+                                    <?php endif; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
 
-                    <!-- Orders Per Month Section -->
-<h2>Monthly Report (Last 12 Months)</h2>
-<table class="admin-table">
-    <thead>
-        <tr>
-            <th>Month</th>
-            <th>Order Count</th>
-            <th>Monthly Sales</th>
-            </tr>
-        </thead>
-    <tbody>
-        <?php if (empty($ordersPerMonth)): ?>
-            <tr>
-                <td colspan="3">No orders found.</td>
-            </tr>
-        <?php else: ?>
-            <?php foreach (array_reverse($ordersPerMonth) as $row): // reverse for oldest to newest ?>
-                <?php
-                    // Calculate total sales for this month
-                    $stmt = $pdo->prepare("SELECT SUM(total_amount) AS month_sales FROM orders WHERE DATE_FORMAT(created_at, '%Y-%m') = ?");
-                    $stmt->execute([$row['month']]);
-                    $monthSales = $stmt->fetchColumn() ?: 0;
-                ?>
-                <tr>
-                    <td><?php echo htmlspecialchars(date('F Y', strtotime($row['month'] . '-01'))); ?></td>
-                    <td><?php echo $row['order_count']; ?></td>
-                    <td>₱<?php echo number_format($monthSales, 2); ?></td>
-                </tr>
-            <?php endforeach; ?>
-        <?php endif; ?>
-    </tbody>
-</table>
+                <!-- Monthly Report Section -->
+                <div class="admin-card" style="margin-bottom: 30px;">
+                    <div class="admin-card-header">
+                        <i class="fas fa-calendar-alt"></i> Monthly Report (Last 12 Months)
+                    </div>
+                    <div class="admin-card-body">
+                        <div class="table-container">
+                            <table class="admin-table">
+                                <thead>
+                                    <tr>
+                                        <th>Month</th>
+                                        <th>Order Count</th>
+                                        <th>Monthly Sales</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php if (empty($ordersPerMonth)): ?>
+                                        <tr>
+                                            <td colspan="3" style="text-align: center; color: #7f8c8d; font-style: italic;">No orders found</td>
+                                        </tr>
+                                    <?php else: ?>
+                                        <?php foreach (array_reverse($ordersPerMonth) as $row): ?>
+                                            <tr>
+                                                <td><?php echo htmlspecialchars(date('F Y', strtotime($row['month'] . '-01'))); ?></td>
+                                                <td><strong><?php echo $row['order_count']; ?></strong></td>
+                                                <td class="price-cell">₱<?php echo number_format($row['month_sales'] ?? 0, 2); ?></td>
+                                            </tr>
+                                        <?php endforeach; ?>
+                                    <?php endif; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
 
-<!-- Inventory Report Section -->
-<h2>Inventory Report (Current Stocks)</h2>
-<table class="admin-table">
-    <thead>
-        <tr>
-            <th>Product Name</th>
-            <th>Current Stock</th>
-        </tr>
-    </thead>
-    <tbody>
-        <?php if (empty($inventory)): ?>
-            <tr>
-                <td colspan="2">No products found.</td>
-            </tr>
-        <?php else: ?>
-            <?php foreach ($inventory as $item): ?>
-                <tr>
-                    <td><?php echo htmlspecialchars($item['product_name']); ?></td>
-                    <td><?php echo (int)$item['stock_quantity']; ?></td>
-                </tr>
-            <?php endforeach; ?>
-        <?php endif; ?>
-    </tbody>
-</table>
-
-<!-- Total Stocks Calculation -->
-<?php
-$totalStocks = 0;
-foreach ($inventory as $item) {
-    $totalStocks += (int)$item['stock_quantity'];
-}
-?>
-<p><strong>Total Stocks (All Products):</strong> <?php echo $totalStocks; ?></p>
+                <!-- Inventory Report Section -->
+                <div class="admin-card">
+                    <div class="admin-card-header">
+                        <i class="fas fa-warehouse"></i> Inventory Report (Current Stocks)
+                    </div>
+                    <div class="admin-card-body">
+                        <div class="table-container">
+                            <table class="admin-table">
+                                <thead>
+                                    <tr>
+                                        <th>Product Name</th>
+                                        <th>Current Stock</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php if (empty($inventory)): ?>
+                                        <tr>
+                                            <td colspan="2" style="text-align: center; color: #7f8c8d; font-style: italic;">No products found</td>
+                                        </tr>
+                                    <?php else: ?>
+                                        <?php 
+                                        $totalStocks = 0;
+                                        foreach ($inventory as $item): 
+                                            $stock = (int)$item['stock_quantity'];
+                                            $totalStocks += $stock;
+                                            
+                                            // Determine stock level class
+                                            $stockClass = '';
+                                            if ($stock <= 5) {
+                                                $stockClass = 'stock-low';
+                                            } elseif ($stock <= 20) {
+                                                $stockClass = 'stock-medium';
+                                            } else {
+                                                $stockClass = 'stock-good';
+                                            }
+                                        ?>
+                                            <tr>
+                                                <td><?php echo htmlspecialchars($item['product_name']); ?></td>
+                                                <td>
+                                                    <span class="<?php echo $stockClass; ?>">
+                                                        <?php echo $stock; ?>
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        <?php endforeach; ?>
+                                    <?php endif; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <?php if (!empty($inventory)): ?>
+                            <div style="margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px; border-left: 4px solid #3498db;">
+                                <strong style="color: #2c3e50; font-size: 1.1rem;">
+                                    <i class="fas fa-boxes"></i> Total Stocks (All Products): <?php echo $totalStocks; ?>
+                                </strong>
+                            </div>
+                        <?php endif; ?>
+                    </div>
                 </div>
             </div>
         </main>
