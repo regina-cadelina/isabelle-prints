@@ -92,11 +92,21 @@ if (session_status() == PHP_SESSION_NONE) {
                 <a href="/isabelle-prints/pages/faqs.php" class="nav-link <?php echo basename($_SERVER['PHP_SELF']) == 'faq.php' ? 'active' : ''; ?>">FAQS</a>
                 
                 <div class="nav-icons">
+                <a href="/isabelle-prints/pages/cart.php" class="nav-icon cart-icon">
+                        <i class="fas fa-shopping-cart"></i>
+                        <?php 
+                        $cartCount = isset($_SESSION['cart']) ? count($_SESSION['cart']) : 0;
+                        if ($cartCount > 0): 
+                        ?>
+                        <span class="cart-count"><?php echo $cartCount; ?></span>
+                        <?php endif; ?>
+                    </a>
                     <?php if (isset($_SESSION['user_id'])): ?>
                         <div class="user-menu">
                             <button class="nav-icon user-icon" onclick="toggleUserMenu()">
                                 <i class="fas fa-user"></i>
                             </button>
+                            
                             <div class="user-dropdown" id="userDropdown">
                                 <div class="user-info">
                                     <span><?php echo htmlspecialchars($_SESSION['user_name'] ?? 'User'); ?></span>
@@ -121,15 +131,6 @@ if (session_status() == PHP_SESSION_NONE) {
                         </a>
                     <?php endif; ?>
                     
-                    <a href="/isabelle-prints/pages/cart.php" class="nav-icon cart-icon">
-                        <i class="fas fa-shopping-cart"></i>
-                        <?php 
-                        $cartCount = isset($_SESSION['cart']) ? count($_SESSION['cart']) : 0;
-                        if ($cartCount > 0): 
-                        ?>
-                        <span class="cart-count"><?php echo $cartCount; ?></span>
-                        <?php endif; ?>
-                    </a>
                 </div>
             </div>
         </div>

@@ -22,6 +22,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $error = "A product with this name/slug already exists. Please use a different name.";
                     break;
                 }
+                
                 $imageFileName = null;
                 if (isset($_FILES['product_image']) && $_FILES['product_image']['error'] === UPLOAD_ERR_OK) {
                     $ext = strtolower(pathinfo($_FILES['product_image']['name'], PATHINFO_EXTENSION));
@@ -31,20 +32,54 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         move_uploaded_file($_FILES['product_image']['tmp_name'], __DIR__ . '/../uploads/products/' . $imageFileName);
                     }
                 }
-                $stmt = $pdo->prepare("INSERT INTO products (category_id, product_name, slug, description, short_description, base_price, sku, stock_quantity, is_bestseller, is_new, image_url) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                
+                // Process features
+                $features = [];
+                if (!empty($_POST['features'])) {
+                    $features = array_filter(array_map('trim', explode("\n", $_POST['features'])));
+                }
+                
+                $stmt = $pdo->prepare("INSERT INTO products (category_id, product_name, name, slug, description, modal_description, short_description, base_price, sku, stock_quantity, is_bestseller, is_new, image_url, features) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
                 $stmt->execute([
                     $_POST['category_id'],
                     $_POST['product_name'],
+                    $_POST['product_name'], // name field
                     $slug,
                     $_POST['description'] ?? '',
+                    $_POST['modal_description'] ?? '',
                     $_POST['short_description'] ?? '',
                     $_POST['base_price'],
                     $_POST['sku'] ?? '',
                     $_POST['stock_quantity'],
                     isset($_POST['is_bestseller']) ? 1 : 0,
                     isset($_POST['is_new']) ? 1 : 0,
-                    $imageFileName
+                    $imageFileName,
+                    json_encode($features)
                 ]);
+                
+                $productId = $pdo->lastInsertId();
+                
+                // Add customization options
+                if (!empty($_POST['customization_options'])) {
+                    foreach ($_POST['customization_options'] as $optionType => $options) {
+                        $sortOrder = 0;
+                        foreach ($options as $option) {
+                            if (!empty($option['name']) && !empty($option['value'])) {
+                                $stmt = $pdo->prepare("INSERT INTO product_customization_options (product_id, option_type, option_name, option_value, price_modifier, is_default, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?)");
+                                $stmt->execute([
+                                    $productId,
+                                    $optionType,
+                                    $option['name'],
+                                    $option['value'],
+                                    $option['price_modifier'] ?? 0,
+                                    isset($option['is_default']) ? 1 : 0,
+                                    $sortOrder++
+                                ]);
+                            }
+                        }
+                    }
+                }
+                
                 $success = "Product added successfully!";
                 break;
 
@@ -58,11 +93,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         move_uploaded_file($_FILES['product_image']['tmp_name'], __DIR__ . '/../uploads/products/' . $imageFileName);
                     }
                 }
-                $stmt = $pdo->prepare("UPDATE products SET category_id = ?, product_name = ?, description = ?, short_description = ?, base_price = ?, sku = ?, stock_quantity = ?, is_bestseller = ?, is_new = ?, image_url = ? WHERE id = ?");
+                
+                // Process features
+                $features = [];
+                if (!empty($_POST['features'])) {
+                    $features = array_filter(array_map('trim', explode("\n", $_POST['features'])));
+                }
+                
+                $stmt = $pdo->prepare("UPDATE products SET category_id = ?, product_name = ?, name = ?, description = ?, modal_description = ?, short_description = ?, base_price = ?, sku = ?, stock_quantity = ?, is_bestseller = ?, is_new = ?, image_url = ?, features = ? WHERE id = ?");
                 $stmt->execute([
                     $_POST['category_id'],
                     $_POST['product_name'],
+                    $_POST['product_name'], // name field
                     $_POST['description'] ?? '',
+                    $_POST['modal_description'] ?? '',
                     $_POST['short_description'] ?? '',
                     $_POST['base_price'],
                     $_POST['sku'] ?? '',
@@ -70,8 +114,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     isset($_POST['is_bestseller']) ? 1 : 0,
                     isset($_POST['is_new']) ? 1 : 0,
                     $imageFileName,
+                    json_encode($features),
                     $_POST['product_id']
                 ]);
+                
+                // Update customization options
+                // First, delete existing options
+                $stmt = $pdo->prepare("DELETE FROM product_customization_options WHERE product_id = ?");
+                $stmt->execute([$_POST['product_id']]);
+                
+                // Add new options
+                if (!empty($_POST['customization_options'])) {
+                    foreach ($_POST['customization_options'] as $optionType => $options) {
+                        $sortOrder = 0;
+                        foreach ($options as $option) {
+                            if (!empty($option['name']) && !empty($option['value'])) {
+                                $stmt = $pdo->prepare("INSERT INTO product_customization_options (product_id, option_type, option_name, option_value, price_modifier, is_default, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?)");
+                                $stmt->execute([
+                                    $_POST['product_id'],
+                                    $optionType,
+                                    $option['name'],
+                                    $option['value'],
+                                    $option['price_modifier'] ?? 0,
+                                    isset($option['is_default']) ? 1 : 0,
+                                    $sortOrder++
+                                ]);
+                            }
+                        }
+                    }
+                }
+                
                 $success = "Product updated successfully!";
                 break;
 
@@ -135,10 +207,22 @@ $categories = $stmt->fetchAll();
 
 // Get product for editing if edit parameter is set
 $edit_product = null;
+$edit_options = [];
 if (isset($_GET['edit'])) {
     $stmt = $pdo->prepare("SELECT * FROM products WHERE id = ?");
     $stmt->execute([$_GET['edit']]);
     $edit_product = $stmt->fetch();
+    
+    if ($edit_product) {
+        // Get existing customization options
+        $stmt = $pdo->prepare("SELECT * FROM product_customization_options WHERE product_id = ? ORDER BY option_type, sort_order");
+        $stmt->execute([$_GET['edit']]);
+        $options = $stmt->fetchAll();
+        
+        foreach ($options as $option) {
+            $edit_options[$option['option_type']][] = $option;
+        }
+    }
 }
 
 $page_title = "Manage Products";
@@ -153,6 +237,48 @@ $page_title = "Manage Products";
     <link rel="stylesheet" href="../assets/css/style.css">
     <link rel="stylesheet" href="../assets/css/admin.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .customization-section {
+            margin-top: 20px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+        }
+        .option-type {
+            margin-bottom: 20px;
+        }
+        .option-item {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+            align-items: center;
+        }
+        .option-item input, .option-item select {
+            flex: 1;
+        }
+        .add-option-btn {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        .remove-option-btn {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        .features-textarea {
+            width: 100%;
+            min-height: 100px;
+            resize: vertical;
+        }
+    </style>
 </head>
 <body class="admin-body">
     <!-- Admin Header -->
@@ -162,8 +288,7 @@ $page_title = "Manage Products";
                 <h2><i class="fas fa-cog"></i> Admin Panel</h2>
             </div>
             <div class="admin-user">
-                <span>&nbsp Welcome, <?php echo htmlspecialchars($current_user['first_name']); ?></span>
-                <a href="../pages/logout.php" class="logout-btn" style="float: right;"><i class="fas fa-sign-out-alt"></i> Logout</a>
+                <a href="../pages/logout.php" class="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</a>
             </div>
         </div>
     </header>
@@ -245,6 +370,25 @@ $page_title = "Manage Products";
                             <textarea id="description" name="description" class="form-control" rows="4"><?php echo $edit_product ? htmlspecialchars($edit_product['description'] ?? '') : ''; ?></textarea>
                         </div>
 
+                        <div class="form-group">
+                            <label for="modal_description">Modal Description (shown in product popup)</label>
+                            <textarea id="modal_description" name="modal_description" class="form-control" rows="3"><?php echo $edit_product ? htmlspecialchars($edit_product['modal_description'] ?? '') : ''; ?></textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="features">Product Features (one per line)</label>
+                            <textarea id="features" name="features" class="form-control features-textarea" rows="5" placeholder="Premium quality materials&#10;Fast turnaround time&#10;Professional design support"><?php 
+                                if ($edit_product && !empty($edit_product['features'])) {
+                                    $features = json_decode($edit_product['features'], true);
+                                    if (is_array($features)) {
+                                        echo htmlspecialchars(implode("\n", $features));
+                                    } else {
+                                        echo htmlspecialchars($edit_product['features']);
+                                    }
+                                }
+                            ?></textarea>
+                        </div>
+
                         <div class="form-row">
                             <div class="form-group">
                                 <label for="base_price">Price (₱)</label>
@@ -281,6 +425,49 @@ $page_title = "Manage Products";
                                     <img src="../uploads/products/<?php echo htmlspecialchars($edit_product['image_url']); ?>" alt="Product Image" style="max-width:100px;">
                                 </div>
                             <?php endif; ?>
+                        </div>
+
+                        <!-- Customization Options Section -->
+                        <div class="customization-section">
+                            <h3>Customization Options</h3>
+                            <p>Configure the options customers can choose from (sizes, colors, finishes, materials)</p>
+                            
+                            <?php 
+                            $option_types = ['size', 'color', 'finish', 'material'];
+                            foreach ($option_types as $type): 
+                            ?>
+                                <div class="option-type">
+                                    <h4><?php echo ucfirst($type); ?> Options</h4>
+                                    <div id="<?php echo $type; ?>-options">
+                                        <?php 
+                                        $existing_options = $edit_options[$type] ?? [];
+                                        if (empty($existing_options)) {
+                                            $existing_options = [null]; // Show one empty row
+                                        }
+                                        foreach ($existing_options as $index => $option): 
+                                        ?>
+                                            <div class="option-item">
+                                                <input type="text" name="customization_options[<?php echo $type; ?>][<?php echo $index; ?>][name]" 
+                                                       placeholder="Option Name (e.g., Small, Red)" 
+                                                       value="<?php echo $option ? htmlspecialchars($option['option_name']) : ''; ?>">
+                                                <input type="text" name="customization_options[<?php echo $type; ?>][<?php echo $index; ?>][value]" 
+                                                       placeholder="<?php echo $type === 'color' ? 'Color Value (e.g., #FF0000)' : 'Option Value'; ?>" 
+                                                       value="<?php echo $option ? htmlspecialchars($option['option_value']) : ''; ?>">
+                                                <input type="number" name="customization_options[<?php echo $type; ?>][<?php echo $index; ?>][price_modifier]" 
+                                                       placeholder="Price +/-" step="0.01" 
+                                                       value="<?php echo $option ? $option['price_modifier'] : '0'; ?>">
+                                                <label>
+                                                    <input type="checkbox" name="customization_options[<?php echo $type; ?>][<?php echo $index; ?>][is_default]" 
+                                                           <?php echo ($option && $option['is_default']) ? 'checked' : ''; ?>>
+                                                    Default
+                                                </label>
+                                                <button type="button" class="remove-option-btn" onclick="removeOption(this)">Remove</button>
+                                            </div>
+                                        <?php endforeach; ?>
+                                    </div>
+                                    <button type="button" class="add-option-btn" onclick="addOption('<?php echo $type; ?>')">Add <?php echo ucfirst($type); ?> Option</button>
+                                </div>
+                            <?php endforeach; ?>
                         </div>
 
                         <div class="form-actions">
@@ -323,8 +510,7 @@ $page_title = "Manage Products";
                                         <tr>
                                             <td><?php echo htmlspecialchars($product['product_name'] ?? ''); ?></td>
                                             <td><?php echo htmlspecialchars($product['category_name']); ?></td>
-                                            <td><?php echo htmlspecialchars($product['sku'] ?? ''); ?></td> <!-- Display SKU -->
-                                            <td>₱<?php echo ($product['base_price']); ?></td>
+                                            <td>$<?php echo number_format($product['base_price'], 2); ?></td>
                                             <td><?php echo (int)$product['stock_quantity']; ?></td>
                                             <td>
                                                 <?php if ($product['is_bestseller']): ?>
@@ -373,6 +559,40 @@ $page_title = "Manage Products";
         </main>
     </div>
 
-    
+    <script>
+        let optionCounters = {
+            size: <?php echo count($edit_options['size'] ?? []) ?: 1; ?>,
+            color: <?php echo count($edit_options['color'] ?? []) ?: 1; ?>,
+            finish: <?php echo count($edit_options['finish'] ?? []) ?: 1; ?>,
+            material: <?php echo count($edit_options['material'] ?? []) ?: 1; ?>
+        };
+
+        function addOption(type) {
+            const container = document.getElementById(type + '-options');
+            const index = optionCounters[type]++;
+            
+            const div = document.createElement('div');
+            div.className = 'option-item';
+            div.innerHTML = `
+                <input type="text" name="customization_options[${type}][${index}][name]" 
+                       placeholder="Option Name (e.g., Small, Red)">
+                <input type="text" name="customization_options[${type}][${index}][value]" 
+                       placeholder="${type === 'color' ? 'Color Value (e.g., #FF0000)' : 'Option Value'}">
+                <input type="number" name="customization_options[${type}][${index}][price_modifier]" 
+                       placeholder="Price +/-" step="0.01" value="0">
+                <label>
+                    <input type="checkbox" name="customization_options[${type}][${index}][is_default]">
+                    Default
+                </label>
+                <button type="button" class="remove-option-btn" onclick="removeOption(this)">Remove</button>
+            `;
+            
+            container.appendChild(div);
+        }
+
+        function removeOption(button) {
+            button.parentElement.remove();
+        }
+    </script>
 </body>
 </html>
