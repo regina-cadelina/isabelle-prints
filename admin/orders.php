@@ -71,7 +71,17 @@ $totalPages = ceil($totalOrders / $perPage);
 
 // Fetch orders with search and pagination
 $query = "
-    SELECT o.id AS order_id, o.order_number, o.total_amount, o.status, o.payment_status, o.created_at, u.first_name, u.last_name, u.email 
+    SELECT 
+        o.id AS order_id, 
+        o.order_number, 
+        o.total_amount, 
+        o.status, 
+        o.payment_status, 
+        o.created_at, 
+        o.reference_number,
+        u.first_name, 
+        u.last_name, 
+        u.email 
     FROM orders o 
     LEFT JOIN users u ON o.user_id = u.id 
     $search_sql
@@ -162,7 +172,7 @@ $statusOptions = ['pending', 'processing', 'shipped', 'completed', 'cancelled'];
                                     <th>Total</th>
                                     <th>Status</th>
                                     <th>Payment Status</th>
-                                    <th>Date</th>
+                                    <th>Reference</th>
                                     <th>Actions</th>
                                 </tr>
                             </thead>
@@ -200,7 +210,7 @@ $statusOptions = ['pending', 'processing', 'shipped', 'completed', 'cancelled'];
             </select>
         </form>
     </td>
-    <td><?php echo date('Y-m-d H:i', strtotime($order['created_at'])); ?></td>
+    <td>#<?php echo htmlspecialchars($order['reference_number']); ?></td>
     <td>
         <form method="POST" style="display:inline;" onsubmit="return confirm('Delete this order?');">
             <input type="hidden" name="action" value="delete_order">
