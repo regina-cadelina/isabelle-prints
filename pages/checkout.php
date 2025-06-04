@@ -84,10 +84,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $pdo->beginTransaction();
 
             $orderNumber = generateOrderNumber($pdo);
-            $subtotal = $cartTotals['subtotal'] ?? $cartTotals['total']; // Default to total if subtotal not calculated
+            $subtotal = $cartTotals['subtotal'] ?? $cartTotals['total'];
             $shippingCost = $cartTotals['shipping'] ?? 0;
             $totalAmount = $cartTotals['total'];
             $downpaymentAmount = $totalAmount * 0.5;
+
+            // Collect all customization notes and custom images from cart items
+            $orderCustomizationNotes = [];
+            $orderCustomImage = null;
+            
+            foreach ($cartItems as $item) {
+                if (!empty($item['customization_notes'])) {
+                    $orderCustomizationNotes[] = $item['product']['name'] . ': ' . $item['customization_notes'];
+                }
+                if (!empty($item['custom_image_file']) && !$orderCustomImage) {
+                    $orderCustomImage = $item['custom_image_file'];
+                }
+            }
+            
+            $combinedNotes = implode("\n\n", $orderCustomizationNotes);
 
             $stmt = $pdo->prepare("
                 INSERT INTO orders (
@@ -95,8 +110,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     subtotal, shipping_cost, total_amount,
                     downpayment_amount, payment_proof_file,
                     reference_number, bank_owner_name, bank_name,
-                    shipping_address, billing_address, created_at
-                ) VALUES (?, ?, 'pending', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
+                    shipping_address, billing_address, phone,
+                    customization_notes, custom_image, created_at
+                ) VALUES (?, ?, 'pending', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
             ");
 
             $stmt->execute([
@@ -111,7 +127,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $bankOwnerName,
                 $bankName,
                 $shippingAddress,
-                $billingAddress
+                $billingAddress,
+                $phone,
+                $combinedNotes,
+                $orderCustomImage
             ]);
 
             $orderId = $pdo->lastInsertId();
@@ -120,23 +139,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 INSERT INTO order_items (
                     order_id, product_id, quantity,
                     unit_price, total_price, selected_options,
-                    customization_notes, file_upload
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    customization_notes, custom_image_file,
+                    selected_size, selected_color, selected_finish, selected_material
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ");
 
             foreach ($cartItems as $item) {
                 $unitPrice = $item['product']['base_price'];
                 $quantity = $item['quantity'];
                 $totalPrice = $unitPrice * $quantity;
+                
+                $options = $item['options'] ?? [];
+                
                 $stmt->execute([
                     $orderId,
                     $item['product']['id'],
                     $quantity,
                     $unitPrice,
                     $totalPrice,
-                    $item['selected_options'] ?? null,
+                    json_encode($options),
                     $item['customization_notes'] ?? null,
-                    $item['file_upload'] ?? null
+                    $item['custom_image_file'] ?? null,
+                    $options['size'] ?? null,
+                    $options['color'] ?? null,
+                    $options['finish'] ?? null,
+                    $options['material'] ?? null
                 ]);
 
                 // Subtract stock
@@ -157,21 +184,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $pdo->rollBack();
             $error = 'An error occurred while processing your order.';
             error_log("Checkout Error: " . $e->getMessage());
-            echo "PDO Error: " . $e->getMessage();
         }
     }
 }
 ?>
 
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Checkout - Gadget Zone</title>
+    <title>Checkout - Isabelle Concept & Prints</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
-    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../assets/css/style.css">
 </head>
 <body>
 
@@ -194,6 +219,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <span class="badge badge-secondary badge-pill"><?= count($cartItems) ?></span>
                 </h4>
                 <ul class="list-group mb-3">
+                    <?php foreach ($cartItems as $item): ?>
+                        <li class="list-group-item d-flex justify-content-between lh-condensed">
+                            <div>
+                                <h6 class="my-0"><?= htmlspecialchars($item['product']['name']) ?></h6>
+                                <small class="text-muted">Qty: <?= $item['quantity'] ?></small>
+                                <?php if (!empty($item['customization_notes'])): ?>
+                                    <br><small class="text-info">Custom: <?= htmlspecialchars(substr($item['customization_notes'], 0, 50)) ?>...</small>
+                                <?php endif; ?>
+                                <?php if (!empty($item['custom_image_file'])): ?>
+                                    <br><small class="text-success">Custom image uploaded</small>
+                                <?php endif; ?>
+                            </div>
+                            <span class="text-muted">₱<?= number_format($item['product']['base_price'] * $item['quantity'], 2) ?></span>
+                        </li>
+                    <?php endforeach; ?>
                     <li class="list-group-item d-flex justify-content-between">
                         <span>Total (PHP)</span>
                         <strong>₱<?= number_format($cartTotals['total'], 2) ?></strong>
@@ -217,13 +257,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     </div>
                     <div class="mb-3">
                         <label for="phone">Phone Number</label>
-
-                        <input type="text" class="form-control" id="phone" name="phone"
-                               required pattern="^\d{11}$" maxlength="11"
-                               title="Phone number must be exactly 11 digits"
-                               value="<?= htmlspecialchars($_POST['phone'] ?? '') ?>"
                         <input type="text" class="form-control" id="phone" name="phone" required value="<?= htmlspecialchars($_POST['phone'] ?? '') ?>">
-
                     </div>
 
                     <h4 class="mb-3">Payment Information</h4>
@@ -234,10 +268,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     </div>
                     <div class="mb-3">
                         <label for="reference_number">Reference Number</label>
-                        <input type="text" class="form-control" id="reference_number" name="reference_number"
-                               required pattern=".{10,32}" minlength="10" maxlength="32"
-                               title="Reference number must be between 10 and 32 characters"
-                               value="<?= htmlspecialchars($_POST['reference_number'] ?? '') ?>">
+                        <input type="text" class="form-control" id="reference_number" name="reference_number" required value="<?= htmlspecialchars($_POST['reference_number'] ?? '') ?>">
                     </div>
                     <div class="mb-3">
                         <label for="bank_owner_name">Bank Owner Name</label>

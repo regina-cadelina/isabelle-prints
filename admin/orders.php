@@ -145,7 +145,6 @@ $statusOptions = ['pending', 'processing', 'shipped', 'completed', 'cancelled'];
                 <?php endif; ?>
 
                 <!-- Search Form -->
-<<<<<<< HEAD
                 <div class="admin-card" style="margin-bottom: 30px;">
                     <div class="admin-card-header">
                         <i class="fas fa-search"></i> Search Orders
@@ -164,80 +163,6 @@ $statusOptions = ['pending', 'processing', 'shipped', 'completed', 'cancelled'];
                                 </a>
                             <?php endif; ?>
                         </form>
-=======
-                <form method="get" style="margin-bottom:15px;display:flex;gap:10px;align-items:center;">
-                    <input type="text" name="search" class="form-control" placeholder="Search by order ID,order #, customer, email, status..." value="<?php echo htmlspecialchars($search); ?>" style="max-width:250px;">
-                    <button type="submit" class="btn-secondary"><i class="fas fa-search"></i> Search</button>
-                    <?php if ($search): ?>
-                        <a href="orders.php" class="btn-secondary" style="background:#eee;color:#333;">Clear</a>
-                    <?php endif; ?>
-                </form>
-
-                <div class="admin-form" style="margin-top: 30px;">
-                    <h2>All Orders</h2>
-                    <div class="table-container">
-                        <table class="admin-table">
-                            <thead>
-                                <tr>
-                                    <th>Order ID</th>
-                                    <th>Order #</th>
-                                    <th>Customer</th>
-                                    <th>Email</th>
-                                    <th>Total</th>
-                                    <th>Status</th>
-                                    <th>Payment Status</th>
-                                    <th>Reference</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-<?php foreach ($orders as $order): ?>
-<tr>
-    <td><?php echo htmlspecialchars($order['order_id']); ?></td>
-    <td>#<?php echo htmlspecialchars($order['order_number']); ?></td>
-    <td><?php echo htmlspecialchars($order['first_name'] . ' ' . $order['last_name']); ?></td>
-    <td><?php echo htmlspecialchars($order['email']); ?></td>
-    <td><?php echo formatPrice($order['total_amount'], 2); ?></td>
-    <td>
-        <form method="POST" style="display:inline;">
-            <input type="hidden" name="action" value="update_status">
-            <input type="hidden" name="order_id" value="<?php echo htmlspecialchars($order['order_id']); ?>">
-            <select name="status" onchange="if(confirm('Change order status?')) this.form.submit();">
-                <?php foreach ($statusOptions as $status): ?>
-                    <option value="<?php echo $status; ?>" <?php if($order['status'] == $status) echo 'selected'; ?>>
-                        <?php echo ucfirst($status); ?>
-                    </option>
-                <?php endforeach; ?>
-            </select>
-        </form>
-    </td>
-    <td>
-        <form method="POST" style="display:inline;">
-            <input type="hidden" name="action" value="update_payment_status">
-            <input type="hidden" name="order_id" value="<?php echo htmlspecialchars($order['order_id']); ?>">
-            <select name="payment_status" onchange="if(confirm('Change payment status?')) this.form.submit();">
-                <?php foreach (['unpaid', 'pending', 'paid'] as $payStatus): ?>
-                    <option value="<?php echo $payStatus; ?>" <?php if($order['payment_status'] == $payStatus) echo 'selected'; ?>>
-                        <?php echo ucfirst($payStatus); ?>
-                    </option>
-                <?php endforeach; ?>
-            </select>
-        </form>
-    </td>
-    <td>#<?php echo htmlspecialchars($order['reference_number']); ?></td>
-    <td>
-        <form method="POST" style="display:inline;" onsubmit="return confirm('Delete this order?');">
-            <input type="hidden" name="action" value="delete_order">
-            <input type="hidden" name="order_id" value="<?php echo htmlspecialchars($order['order_id']); ?>">
-            <button type="submit" class="btn-small btn-danger">Delete</button>
-        </form>
-        <a href="order-details.php?id=<?php echo $order['order_id']; ?>" class="btn-small">View</a>
-    </td>
-</tr>
-<?php endforeach; ?>
-                            </tbody>
-                        </table>
->>>>>>> e28bc4c208c44d9a68dea0d4eb4719401801552d
                     </div>
                 </div>
 
