@@ -119,10 +119,10 @@ if (isset($_GET['order_id'])) {
                                 <span>₱<?php echo number_format($order['shipping_cost'], 2); ?></span>
                             </div>
                         <?php endif; ?>
-                        <?php if ($order['tax_amount'] > 0): ?>
+                        <?php if (($order['tax_amount'] ?? 0) > 0): ?>
                             <div class="summary-row">
                                 <span>Tax:</span>
-                                <span>₱<?php echo number_format($order['tax_amount'], 2); ?></span>
+                                <span>₱<?php echo number_format($order['tax_amount'] ?? 0, 2); ?></span>
                             </div>
                         <?php endif; ?>
                         <div class="summary-row total-row">
@@ -135,23 +135,54 @@ if (isset($_GET['order_id'])) {
                         </div>
                     </div>
                 </div>
-
                 <!-- Shipping & Billing Info -->
                 <div class="address-section">
                     <div class="address-column">
                         <h3>Shipping Address</h3>
                         <div class="address-details">
-                            <p><?php echo htmlspecialchars($order['shipping_first_name'] . ' ' . $order['shipping_last_name']); ?></p>
-                            <p><?php echo htmlspecialchars($order['shipping_address']); ?></p>
-                            <p><?php echo htmlspecialchars($order['shipping_city'] . ', ' . $order['shipping_state'] . ' ' . $order['shipping_zip']); ?></p>
+                            <p>
+                                <?php
+                                    echo htmlspecialchars(
+                                        ($order['shipping_first_name'] ?? '') . ' ' . ($order['shipping_last_name'] ?? '')
+                                    );
+                                ?>
+                            </p>
+                            <p>
+                                <?php echo htmlspecialchars($order['shipping_address'] ?? ''); ?>
+                            </p>
+                            <p>
+                                <?php
+                                    echo htmlspecialchars(
+                                        ($order['shipping_city'] ?? '') . ', ' .
+                                        ($order['shipping_state'] ?? '') . ' ' .
+                                        ($order['shipping_zip'] ?? '')
+                                    );
+                                ?>
+                            </p>
                         </div>
                     </div>
                     <div class="address-column">
                         <h3>Billing Address</h3>
                         <div class="address-details">
-                            <p><?php echo htmlspecialchars($order['billing_first_name'] . ' ' . $order['billing_last_name']); ?></p>
-                            <p><?php echo htmlspecialchars($order['billing_address']); ?></p>
-                            <p><?php echo htmlspecialchars($order['billing_city'] . ', ' . $order['billing_state'] . ' ' . $order['billing_zip']); ?></p>
+                            <p>
+                                <?php
+                                    echo htmlspecialchars(
+                                        ($order['billing_first_name'] ?? '') . ' ' . ($order['billing_last_name'] ?? '')
+                                    );
+                                ?>
+                            </p>
+                            <p>
+                                <?php echo htmlspecialchars($order['billing_address'] ?? ''); ?>
+                            </p>
+                            <p>
+                                <?php
+                                    echo htmlspecialchars(
+                                        ($order['billing_city'] ?? '') . ', ' .
+                                        ($order['billing_state'] ?? '') . ' ' .
+                                        ($order['billing_zip'] ?? '')
+                                    );
+                                ?>
+                            </p>
                         </div>
                     </div>
                 </div>
@@ -162,13 +193,13 @@ if (isset($_GET['order_id'])) {
                     <div class="payment-details">
                         <div class="payment-method">
                             <span class="label">Payment Method:</span>
-                            <span class="value"><?php echo htmlspecialchars($order['payment_method']); ?></span>
+                            <span class="value"><?php echo htmlspecialchars($order['payment_method'] ?? ''); ?></span>
                         </div>
                         <?php if (!empty($order['bank_name'])): ?>
                             <div class="bank-details">
                                 <p><strong>Bank:</strong> <?php echo htmlspecialchars($order['bank_name']); ?></p>
                                 <p><strong>Reference Number:</strong> <?php echo htmlspecialchars($order['reference_number']); ?></p>
-                                <p><strong>Account Holder:</strong> <?php echo htmlspecialchars($order['account_holder']); ?></p>
+                                <p><strong>Account Holder:</strong> <?php echo htmlspecialchars($order['account_holder'] ?? ''); ?></p>
                             </div>
                         <?php endif; ?>
                     </div>
