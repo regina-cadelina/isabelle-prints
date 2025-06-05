@@ -173,10 +173,6 @@ $cartTotals = calculateCartTotal($pdo);
                         <span>Shipping:</span>
                         <span><?php echo formatPrice($cartTotals['shipping']); ?></span>
                     </div>
-                    <div class="summary-line">
-                        <span>Tax:</span>
-                        <span><?php echo formatPrice($cartTotals['tax']); ?></span>
-                    </div>
                     <div class="summary-line total">
                         <span>Total:</span>
                         <span><?php echo formatPrice($cartTotals['total']); ?></span>
