@@ -119,12 +119,6 @@ if (isset($_GET['order_id'])) {
                                 <span>₱<?php echo number_format($order['shipping_cost'], 2); ?></span>
                             </div>
                         <?php endif; ?>
-                        <?php if (($order['tax_amount'] ?? 0) > 0): ?>
-                            <div class="summary-row">
-                                <span>Tax:</span>
-                                <span>₱<?php echo number_format($order['tax_amount'] ?? 0, 2); ?></span>
-                            </div>
-                        <?php endif; ?>
                         <div class="summary-row total-row">
                             <span>Total Amount:</span>
                             <span>₱<?php echo number_format($order['total_amount'], 2); ?></span>

@@ -1,11 +1,63 @@
-/* Header alignment fix */
-.main-nav {
+/* Header Fix - Ensure stable positioning without overlap */
+header {
+    position: sticky !important;
+    top: 0;
+    left: 0;
+    right: 0;
+    background-color: #fff;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+    width: 100%;
+    height: 80px;
+    display: flex;
+    align-items: center;
+    margin-bottom: 0;
+  }
+  
+  /* Remove padding from body since we're using sticky positioning */
+  body {
+    padding-top: 0 !important;
+    margin: 0;
+  }
+  
+  /* Ensure main content starts immediately after header */
+  main,
+  .main-content,
+  .page-content {
+    margin-top: 0;
+    padding-top: 2rem; /* Add some breathing room */
+  }
+  
+  /* Header content layout */
+  .header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 15px;
+    height: 100%;
+  }
+  
+  /* Logo styling */
+  .logo a {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #333;
+    text-decoration: none;
+  }
+  
+  /* Navigation container */
+  .nav-container {
     display: flex;
     align-items: center;
     gap: 2rem;
-}
-
-.main-nav a {
+    height: 100%;
+  }
+  
+  /* Navigation links */
+  .nav-link {
     color: #555;
     font-weight: 500;
     transition: color 0.3s;
@@ -13,15 +65,27 @@
     text-transform: uppercase;
     font-size: 0.9rem;
     letter-spacing: 0.5px;
-}
-
-.main-nav a:hover, 
-.main-nav a.active {
+    height: 100%;
+    display: flex;
+    align-items: center;
+  }
+  
+  .nav-link:hover,
+  .nav-link.active {
     color: #f4c430;
-}
-
-.user-icon, 
-.cart-icon {
+  }
+  
+  /* Navigation icons container */
+  .nav-icons {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-left: 1rem;
+    height: 100%;
+  }
+  
+  /* Icon styling */
+  .nav-icon {
     background: none;
     border: none;
     cursor: pointer;
@@ -34,26 +98,170 @@
     padding: 0.5rem;
     transition: color 0.3s;
     text-decoration: none;
-}
-
-.user-icon:hover,
-.cart-icon:hover {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+  }
+  
+  .nav-icon:hover {
     color: #f4c430;
-    background-color: transparent;
-}
-
-/* Make sure the header content is properly aligned */
-.header-content {
+    background-color: rgba(244, 196, 48, 0.1);
+  }
+  
+  /* Cart count badge */
+  .cart-count {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    background-color: #f4c430;
+    color: white;
+    font-size: 0.7rem;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
     display: flex;
-    justify-content: space-between;
     align-items: center;
-}
-
-/* Responsive adjustments */
-@media (max-width: 768px) {
-    .main-nav {
-        flex-wrap: wrap;
-        justify-content: center;
-        gap: 1rem;
+    justify-content: center;
+    font-weight: bold;
+  }
+  
+  /* User menu positioning */
+  .user-menu {
+    position: relative;
+  }
+  
+  /* User dropdown styling - FIXED POSITIONING UNDER ACCOUNT ICON */
+  .user-dropdown {
+    display: none;
+    position: fixed; /* Changed to fixed for precise positioning */
+    background: white;
+    min-width: 220px;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    border-radius: 8px;
+    z-index: 1001;
+    border: 1px solid #eee;
+    overflow: hidden;
+    opacity: 0;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    pointer-events: none;
+    transform: translateY(-10px);
+  }
+  
+  .user-dropdown.show {
+    display: block;
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: all;
+  }
+  
+  /* User info section */
+  .user-info {
+    padding: 1rem;
+    border-bottom: 1px solid #eee;
+    background: #f8f9fa;
+  }
+  
+  .user-info span {
+    display: block;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 2px;
+  }
+  
+  .user-info small {
+    color: #666;
+    font-size: 0.8rem;
+  }
+  
+  /* Dropdown links */
+  .user-dropdown a {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    color: #333;
+    text-decoration: none;
+    transition: background-color 0.2s;
+    font-size: 0.9rem;
+  }
+  
+  .user-dropdown a:hover {
+    background-color: #f8f9fa;
+    color: #333;
+  }
+  
+  .user-dropdown a i {
+    width: 16px;
+    text-align: center;
+    color: #666;
+  }
+  
+  /* Divider styling */
+  .user-dropdown hr {
+    margin: 0;
+    border: none;
+    border-top: 1px solid #eee;
+  }
+  
+  /* Overlay to close dropdown when clicking outside */
+  .dropdown-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 999;
+    display: none;
+  }
+  
+  .dropdown-overlay.show {
+    display: block;
+  }
+  
+  /* Responsive design */
+  @media (max-width: 768px) {
+    .header-content {
+      flex-direction: row; /* Keep as row to maintain layout */
+      padding: 0 15px;
+      height: 100%;
     }
-}
+  
+    .nav-container {
+      flex-direction: row;
+      gap: 1rem;
+      justify-content: flex-end;
+    }
+  
+    .nav-icons {
+      margin-left: 0;
+    }
+  
+    body {
+      padding-top: 0px; /* Keep consistent with header height */
+    }
+  
+    .user-dropdown {
+      right: 0;
+      transform: none;
+    }
+  
+    .user-dropdown.show {
+      transform: none;
+    }
+  }
+  
+  @media (max-width: 480px) {
+    .nav-container {
+      gap: 0.5rem;
+    }
+  
+    .nav-link {
+      font-size: 0.8rem;
+      padding: 0.5rem;
+    }
+  
+    .user-dropdown {
+      min-width: 200px;
+    }
+  }
+  

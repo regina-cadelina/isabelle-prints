@@ -91,7 +91,7 @@ function calculateCartTotal($pdo) {
     
     $shipping = 5.99;
     $tax = $subtotal * 0.07; // 7% tax
-    $total = $subtotal + $shipping + $tax;
+    $total = $subtotal + $shipping;
     
     return [
         'subtotal' => $subtotal,

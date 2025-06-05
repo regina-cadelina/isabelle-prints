@@ -435,6 +435,65 @@ style.textContent = `
   `
 document.head.appendChild(style)
 
+// Add this function to ensure dropdown positioning is correct
+function updateDropdownPosition() {
+  const userIcon = document.querySelector(".user-icon")
+  const dropdown = document.getElementById("userDropdown")
+
+  if (userIcon && dropdown) {
+    // Get the position of the user icon
+    const rect = userIcon.getBoundingClientRect()
+
+    // Set the dropdown position
+    dropdown.style.top = rect.bottom + 5 + "px"
+
+    // Ensure dropdown doesn't go off-screen on the right
+    const dropdownWidth = dropdown.offsetWidth
+    const viewportWidth = window.innerWidth
+
+    if (rect.right - dropdownWidth < 0) {
+      // If it would go off-screen to the left, align with left edge
+      dropdown.style.right = "auto"
+      dropdown.style.left = "0px"
+    } else if (rect.right + dropdownWidth > viewportWidth) {
+      // If it would go off-screen to the right, align with right edge
+      dropdown.style.right = "0px"
+      dropdown.style.left = "auto"
+    } else {
+      // Otherwise, align with the user icon
+      dropdown.style.right = viewportWidth - rect.right + "px"
+      dropdown.style.left = "auto"
+    }
+  }
+}
+
+// Modify the toggleUserMenu function
+function toggleUserMenu(event) {
+  event.stopPropagation()
+  const dropdown = document.getElementById("userDropdown")
+  const overlay = document.getElementById("dropdownOverlay")
+
+  const isShowing = dropdown.classList.contains("show")
+
+  if (isShowing) {
+    dropdown.classList.remove("show")
+    overlay.classList.remove("show")
+  } else {
+    dropdown.classList.add("show")
+    overlay.classList.add("show")
+    // Update dropdown position when showing
+    updateDropdownPosition()
+  }
+}
+
+// Add window resize event listener to update dropdown position
+window.addEventListener("resize", () => {
+  const dropdown = document.getElementById("userDropdown")
+  if (dropdown && dropdown.classList.contains("show")) {
+    updateDropdownPosition()
+  }
+})
+
 // Initialize page
 document.addEventListener("DOMContentLoaded", () => {
   // Update cart count on page load
@@ -452,4 +511,27 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     })
   })
+  // Close dropdown when clicking on overlay
+  const overlay = document.getElementById("dropdownOverlay")
+  if (overlay) {
+    overlay.addEventListener("click", closeUserMenu)
+  }
+
+  // Close dropdown when clicking outside
+  document.addEventListener("click", (event) => {
+    const userMenu = document.querySelector(".user-menu")
+    if (userMenu && !userMenu.contains(event.target)) {
+      closeUserMenu()
+    }
+  })
+
+  // Close dropdown when pressing Escape key
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") {
+      closeUserMenu()
+    }
+  })
+
+  // Initialize dropdown position
+  updateDropdownPosition()
 })
